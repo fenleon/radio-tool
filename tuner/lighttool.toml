@@ -1,9 +1,0 @@
-[tool]
-id = "com.thelightphone.tuner"
-label = "Tuner"
-versionCode = 1
-versionName = "1.0.0"
-permissions = ["android.permission.INTERNET", "android.permission.RECORD_AUDIO"]
-serverPackage = "com.thelightphone.sdk.emulator"
-sharedUserId = "com.thelightphone.sdk"
-orientation = "portrait"
