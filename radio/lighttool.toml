@@ -1,0 +1,10 @@
+[tool]
+id = "com.thelightphone.radio"
+label = "Radio"
+versionCode = 1
+versionName = "1.0.0"
+permissions = ["android.permission.INTERNET", "android.permission.POST_NOTIFICATIONS"]
+serverPackage = "com.thelightphone.sdk.emulator"
+sharedUserId = "com.thelightphone.sdk"
+orientation = "portrait"
+enableBackgroundAudio = true
