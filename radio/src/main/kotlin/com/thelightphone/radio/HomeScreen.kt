@@ -79,7 +79,7 @@ class RadioViewModel(
     
     // Observable state for the UI
     val streamUrl = MutableStateFlow("https://stream.radiokps.nz/")
-    val stationName = MutableStateFlow("Radio KPS")
+    val stationName = MutableStateFlow("Radio")
     val stations = MutableStateFlow<List<Station>>(emptyList())
     val recentStations = MutableStateFlow<List<Station>>(emptyList())
     
@@ -429,7 +429,7 @@ private fun PreviewContent() {
                 contentAlignment = Alignment.Center
             ) {
                 LightText(
-                    text = "Radio KPS",
+                    text = "Radio",
                     variant = LightTextVariant.Heading,
                     align = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 40.dp)
