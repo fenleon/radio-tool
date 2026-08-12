@@ -14,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.thelightphone.sdk.LightScreen
 import com.thelightphone.sdk.LightViewModel
@@ -24,11 +25,13 @@ import com.thelightphone.sdk.ui.LightIcons
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextVariant
 import com.thelightphone.sdk.ui.LightTheme
+import com.thelightphone.sdk.ui.LightThemeColors
 import com.thelightphone.sdk.ui.LightThemeController
 import com.thelightphone.sdk.ui.LightThemeTokens
 import com.thelightphone.sdk.ui.LightTopBar
 import com.thelightphone.sdk.ui.LightTopBarCenter
 import com.thelightphone.sdk.ui.lightClickable
+import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
@@ -136,4 +139,71 @@ class AddStationScreen(private val sealedActivity: SealedLightActivity) : LightS
         unfocusedLabelColor = colors.contentSecondary,
         cursorColor = colors.content
     )
+}
+
+@Preview(widthDp = 1080 / 3, heightDp = 1240 / 3, showBackground = true)
+@Composable
+private fun PreviewAddStationScreen() {
+    LightTheme(colors = LightThemeColors.Dark) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            LightTopBar(
+                leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = {}),
+                center = LightTopBarCenter.Text("ADD STATION")
+            )
+
+            Column(modifier = Modifier.padding(24.dp)) {
+                OutlinedTextField(
+                    value = "",
+                    onValueChange = {},
+                    label = { LightText("Station Name", variant = LightTextVariant.Detail) },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color.White,
+                        unfocusedBorderColor = Color.Gray,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.Gray,
+                        cursorColor = Color.White
+                    )
+                )
+
+                OutlinedTextField(
+                    value = "",
+                    onValueChange = {},
+                    label = { LightText("Stream URL", variant = LightTextVariant.Detail) },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color.White,
+                        unfocusedBorderColor = Color.Gray,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.Gray,
+                        cursorColor = Color.White
+                    )
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        com.thelightphone.sdk.ui.LightIcon(
+                            icon = LightIcons.PLAY,
+                            size = 2f,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        LightText("PLAY STATION", variant = LightTextVariant.Button)
+                    }
+                }
+            }
+        }
+    }
 }

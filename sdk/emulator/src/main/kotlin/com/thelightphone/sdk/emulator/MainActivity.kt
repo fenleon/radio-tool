@@ -334,9 +334,9 @@ private fun LightLockscreen(
                 )
                 
                 // Controls appear below the clock without shifting it
-                if (metadata != null) {
+                if (metadata != null || isPlaying) {
                     Box(
-                        modifier = Modifier.align(BiasAlignment(0f, 0.25f))
+                        modifier = Modifier.align(BiasAlignment(0f, 0.35f))
                     ) {
                         if (isPlaying) {
                             Box(Modifier.clickable(onClick = onToggle).padding(8.dp)) {
@@ -347,7 +347,7 @@ private fun LightLockscreen(
                                 Box(Modifier.clickable(onClick = onStop).padding(8.dp)) {
                                     LightIcon(icon = LightIcons.STOP, size = 2f)
                                 }
-                                Spacer(Modifier.width(16.dp))
+                                Spacer(Modifier.width(32.dp))
                                 Box(Modifier.clickable(onClick = onToggle).padding(8.dp)) {
                                     LightIcon(icon = LightIcons.PLAY, size = 2f)
                                 }

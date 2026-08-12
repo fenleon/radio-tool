@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ import com.thelightphone.sdk.ui.LightThemeTokens
 import com.thelightphone.sdk.ui.LightTopBar
 import com.thelightphone.sdk.ui.LightTopBarCenter
 import com.thelightphone.sdk.ui.lightClickable
+import androidx.compose.ui.tooling.preview.Preview
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
@@ -241,5 +243,58 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                 LightText(text = details.joinToString(" • "), variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
             }
         }
+    }
+}
+
+@Preview(widthDp = 1080 / 3, heightDp = 1240 / 3, showBackground = true)
+@Composable
+private fun PreviewSearchScreen() {
+    LightTheme(colors = LightThemeColors.Dark) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(LightThemeColors.Dark.background)
+        ) {
+            LightTopBar(
+                leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = {}),
+                center = LightTopBarCenter.Text("FIND STATIONS"),
+                rightButton = LightBarButton.LightIcon(icon = LightIcons.SEARCH, onClick = {})
+            )
+
+            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                OutlinedTextField(
+                    value = "Jazz",
+                    onValueChange = {},
+                    label = { LightText("Search stations...", variant = LightTextVariant.Detail) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp, bottom = 16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color.White,
+                        unfocusedBorderColor = Color.Gray,
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.Gray,
+                        cursorColor = Color.White
+                    )
+                )
+
+                PreviewSearchResultRow("Jazz Radio", "MP3 • 128kbps")
+                PreviewSearchResultRow("Classic Jazz FM", "AAC • 64kbps")
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreviewSearchResultRow(name: String, details: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
+    ) {
+        LightText(text = name, variant = LightTextVariant.Copy)
+        LightText(text = details, variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
     }
 }

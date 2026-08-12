@@ -15,6 +15,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.thelightphone.sdk.LightScreen
 import com.thelightphone.sdk.LightViewModel
@@ -26,14 +27,15 @@ import com.thelightphone.sdk.ui.LightScrollView
 import com.thelightphone.sdk.ui.LightText
 import com.thelightphone.sdk.ui.LightTextVariant
 import com.thelightphone.sdk.ui.LightTheme
+import com.thelightphone.sdk.ui.LightThemeColors
 import com.thelightphone.sdk.ui.LightThemeController
 import com.thelightphone.sdk.ui.LightThemeTokens
 import com.thelightphone.sdk.ui.LightTopBar
 import com.thelightphone.sdk.ui.LightTopBarCenter
 import com.thelightphone.sdk.ui.lightClickable
+import androidx.compose.ui.tooling.preview.Preview
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
@@ -281,5 +283,75 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                 )
             }
         }
+    }
+}
+
+@Preview(widthDp = 1080 / 3, heightDp = 1240 / 3, showBackground = true)
+@Composable
+private fun PreviewLibraryScreen() {
+    LightTheme(colors = LightThemeColors.Dark) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(LightThemeColors.Dark.background)
+        ) {
+            LightTopBar(
+                leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = {}),
+                center = LightTopBarCenter.Text("LIBRARY"),
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    LightText(text = "FAVOURITES", variant = LightTextVariant.Subheading)
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .fillMaxWidth(0.6f)
+                            .height(2.dp)
+                            .background(Color.White)
+                    )
+                }
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    LightText(text = "RECENT", variant = LightTextVariant.Subheading, lighten = true)
+                }
+            }
+
+            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                PreviewStationRow("Radio New Zealand", "https://stream.rnz.co.nz/mp3")
+                PreviewStationRow("BBC Radio 6 Music", "http://stream.live.vc.bbc.co.uk/6music")
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreviewStationRow(name: String, url: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            LightText(text = name, variant = LightTextVariant.Copy)
+            LightText(text = url, variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
+        }
+        com.thelightphone.sdk.ui.LightIcon(
+            icon = LightIcons.CLOSE,
+            modifier = Modifier.padding(8.dp),
+            size = 1.5f
+        )
     }
 }
