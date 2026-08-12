@@ -26,7 +26,7 @@ A minimal, high-contrast radio streaming application.
 ## Quickstart
 
 ### Running your Tool
-**You can test your tool on any Android device or emulator**, but certain functionality (receiving push notifications, requesting special permissions) can only be tested with:
+**You can test your tool on any Android device or emulator**, but certain functionality (requesting special permissions) can only be tested with:
 A) Real Light Phone hardware running LightOS
 B) An Android emulator (on your computer) set up to run our LightOS emulator app as a _system app_ ([see advanced instructions](docs/system_app))
 
