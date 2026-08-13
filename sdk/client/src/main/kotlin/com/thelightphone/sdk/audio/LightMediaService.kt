@@ -1,11 +1,14 @@
 package com.thelightphone.sdk.audio
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.net.wifi.WifiManager
 import android.os.Build
-import androidx.core.app.NotificationCompat
+import android.os.PowerManager
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -23,6 +26,8 @@ class LightMediaService : MediaSessionService() {
         private const val CHANNEL_ID = "light_audio_channel"
         private const val NOTIFICATION_ID = 1001
         private var activeSession: MediaSession? = null
+        private var wifiLock: WifiManager.WifiLock? = null
+        private var wakeLock: PowerManager.WakeLock? = null
 
         /**
          * Sets the active media session for the background service.
@@ -36,6 +41,40 @@ class LightMediaService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        acquireLocks()
+        startForegroundServiceWithNotification()
+    }
+
+    private fun acquireLocks() {
+        val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        wifiLock = wm.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "LightRadio:WifiLock")
+        wifiLock?.acquire()
+
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LightRadio:WakeLock")
+        wakeLock?.acquire()
+    }
+
+    private fun startForegroundServiceWithNotification() {
+        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, CHANNEL_ID)
+                .setContentTitle("Radio Playing")
+                .setSmallIcon(android.R.drawable.ic_media_play)
+                .setOngoing(true)
+                .build()
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(this)
+                .setContentTitle("Radio Playing")
+                .setSmallIcon(android.R.drawable.ic_media_play)
+                .setOngoing(true)
+                .build()
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     private fun createNotificationChannel() {
@@ -65,6 +104,8 @@ class LightMediaService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        wifiLock?.let { if (it.isHeld) it.release() }
+        wakeLock?.let { if (it.isHeld) it.release() }
         activeSession = null
         super.onDestroy()
     }
