@@ -108,6 +108,7 @@ class LightAudioPlayer internal constructor(
 
         return ExoPlayer.Builder(context)
             .setMediaSourceFactory(mediaSourceFactory)
+            .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
             .apply {
                 setAudioAttributes(usage.toMedia3AudioAttributes(), false)

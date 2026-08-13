@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import com.thelightphone.sdk.ui.LightScrollView
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -87,40 +89,50 @@ class AddStationScreen(private val sealedActivity: SealedLightActivity) : LightS
                     center = LightTopBarCenter.Text("ADD STATION")
                 )
 
-                Column(modifier = Modifier.padding(24.dp)) {
-                    // Input for station name
-                    OutlinedTextField(
-                        value = stationName,
-                        onValueChange = { viewModel.name.value = it },
-                        label = { LightText("Station Name", variant = LightTextVariant.Detail) },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                        colors = outlinedTextFieldColors(colors)
-                    )
+                LightScrollView(
+                    modifier = Modifier
+                        .weight(1f)
+                        .imePadding()
+                ) {
+                    Column(modifier = Modifier.padding(24.dp)) {
+                        // Input for station name
+                        OutlinedTextField(
+                            value = stationName,
+                            onValueChange = { viewModel.name.value = it },
+                            label = { LightText("Station Name", variant = LightTextVariant.Detail) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            colors = outlinedTextFieldColors(colors)
+                        )
 
-                    // Input for stream URL
-                    OutlinedTextField(
-                        value = streamUrl,
-                        onValueChange = { viewModel.url.value = it },
-                        label = { LightText("Stream URL", variant = LightTextVariant.Detail) },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
-                        colors = outlinedTextFieldColors(colors)
-                    )
+                        // Input for stream URL
+                        OutlinedTextField(
+                            value = streamUrl,
+                            onValueChange = { viewModel.url.value = it },
+                            label = { LightText("Stream URL", variant = LightTextVariant.Detail) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 32.dp),
+                            colors = outlinedTextFieldColors(colors)
+                        )
 
-                    // Primary action button (Play/Save)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .lightClickable { viewModel.save() }
-                            .padding(vertical = 12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            com.thelightphone.sdk.ui.LightIcon(
-                                icon = LightIcons.PLAY,
-                                size = 2f,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            LightText("PLAY STATION", variant = LightTextVariant.Button)
+                        // Primary action button (Play/Save)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .lightClickable { viewModel.save() }
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                com.thelightphone.sdk.ui.LightIcon(
+                                    icon = LightIcons.PLAY,
+                                    size = 2f,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                LightText("PLAY STATION", variant = LightTextVariant.Button)
+                            }
                         }
                     }
                 }

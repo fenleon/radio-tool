@@ -144,7 +144,11 @@ class LightActivity internal constructor() : ComponentActivity() {
     }
 
     private val Int.isSystemKeyCode: Boolean
-        get() = (this == KeyEvent.KEYCODE_BACK || this == KeyEvent.KEYCODE_HOME)
+        get() = (this == KeyEvent.KEYCODE_BACK || 
+                 this == KeyEvent.KEYCODE_HOME ||
+                 this == KeyEvent.KEYCODE_VOLUME_UP ||
+                 this == KeyEvent.KEYCODE_VOLUME_DOWN ||
+                 this == KeyEvent.KEYCODE_VOLUME_MUTE)
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         // don't do anything with android keys

@@ -64,7 +64,7 @@ data class Station(val name: String, val url: String)
  */
 class RadioViewModel(
     filesDir: File,
-    sealedActivity: SealedLightActivity
+    private val sealedActivity: SealedLightActivity
 ) : LightViewModel<Unit>() {
     // SDK provided audio player wrapper
     private val audio = DefaultLightAudio(sealedActivity)
@@ -261,6 +261,8 @@ class RadioViewModel(
 
     fun openBluetooth() {
         viewModelScope.launch {
+            // This relies on the LightOS server implementing this custom bridge method.
+            // On early SDK builds for physical hardware, this may not trigger an action yet.
             callRemoteServiceMethod(LightServiceMethod.OpenBluetoothSettings, Unit)
         }
     }

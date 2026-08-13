@@ -1,9 +1,15 @@
 package com.thelightphone.sdk.audio
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
+import android.os.Build
+import androidx.core.app.NotificationCompat
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.MediaStyleNotificationHelper
 
 /**
  * A standard system service that hosts a MediaSession for background audio playback.
@@ -14,6 +20,8 @@ import androidx.media3.session.MediaSessionService
 class LightMediaService : MediaSessionService() {
     
     companion object {
+        private const val CHANNEL_ID = "light_audio_channel"
+        private const val NOTIFICATION_ID = 1001
         private var activeSession: MediaSession? = null
 
         /**
@@ -22,6 +30,26 @@ class LightMediaService : MediaSessionService() {
          */
         fun setActiveSession(session: MediaSession?) {
             activeSession = session
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        createNotificationChannel()
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Light Audio Playback",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Controls for background audio playback"
+                setShowBadge(false)
+            }
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(channel)
         }
     }
 
