@@ -107,6 +107,8 @@ class LightAudioPlayer internal constructor(
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent("LightPhoneRadioTool/1.0")
             .setAllowCrossProtocolRedirects(true)
+            .setConnectTimeoutMs(15000)
+            .setReadTimeoutMs(15000)
             .setDefaultRequestProperties(mapOf("Icy-MetaData" to "1"))
 
         val mediaSourceFactory = DefaultMediaSourceFactory(context)
@@ -364,11 +366,22 @@ class LightAudioPlayer internal constructor(
 
 internal fun LightAudioItem.toMediaItem(queueIndex: Int): MediaItem {
     val uri = Uri.parse(source.uriString())
-    return MediaItem.Builder()
+    val builder = MediaItem.Builder()
         .setUri(uri)
         .setMediaId(uri.toString())
         .setMediaMetadata(metadata.toMedia3Metadata(queueIndex))
-        .build()
+    
+    // Hint at the MIME type for raw stream URLs without extensions
+    if (source is LightAudioSource.UrlSource) {
+        val url = source.url.lowercase()
+        if (url.endsWith(".m3u8")) {
+            builder.setMimeType("application/x-mpegURL")
+        } else if (url.endsWith(".mp3") || url.contains(":8000") || url.contains("stream")) {
+            builder.setMimeType("audio/mpeg")
+        }
+    }
+    
+    return builder.build()
 }
 
 internal fun LightAudioSource.uriString(): String = when (this) {

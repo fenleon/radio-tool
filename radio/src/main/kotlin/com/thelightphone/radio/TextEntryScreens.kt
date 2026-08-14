@@ -57,7 +57,12 @@ class RenameScreen(
                 title = "Rename",
                 state = state,
                 keyboardOptionsFlow = MutableStateFlow(defaultKeyboardOptions()),
-                onSubmit = { goBack(it.toString()) },
+                onSubmit = { 
+                    val trimmed = it.toString().trim()
+                    if (trimmed.isNotBlank()) {
+                        goBack(trimmed)
+                    }
+                },
                 onBack = { goBack(null) },
                 submitLabel = "SAVE"
             )
@@ -145,11 +150,12 @@ class AddStationUrlScreen(
                         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(colors.content))
                     }
 
-                    val onAdd = {
-                        if (state.text.isNotBlank()) {
-                            goBack(Station("Untitled", state.text.toString()))
-                        }
+                val onAdd = {
+                    val input = state.text.toString().trim()
+                    if (input.isNotBlank()) {
+                        goBack(Station("Untitled", input))
                     }
+                }
 
                     // Standard keyboard logic
                     val callback = remember(state) {
