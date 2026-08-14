@@ -117,6 +117,14 @@ class LightAudioPlayer internal constructor(
 
         return ExoPlayer.Builder(context)
             .setMediaSourceFactory(mediaSourceFactory)
+            .setLoadControl(androidx.media3.exoplayer.DefaultLoadControl.Builder()
+                .setBufferDurationsMs(
+                    1500,  // Min buffer before starting playback
+                    5000,  // Max buffer
+                    500,   // Min buffer after rebuffering
+                    1000   // Min buffer for playback after user action
+                )
+                .build())
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
             .apply {
@@ -373,7 +381,8 @@ internal fun LightAudioItem.toMediaItem(queueIndex: Int): MediaItem {
     
     // Hint at the MIME type for raw stream URLs without extensions
     if (source is LightAudioSource.UrlSource) {
-        val url = source.url.lowercase()
+        // Strip SHOUTcast suffix for extension matching
+        val url = source.url.lowercase().removeSuffix(";")
         if (url.endsWith(".m3u8")) {
             builder.setMimeType("application/x-mpegURL")
         } else if (url.endsWith(".mp3") || url.contains(":8000") || url.contains("stream")) {

@@ -6,7 +6,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.delete
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Surface
@@ -64,7 +63,8 @@ class RenameScreen(
                     }
                 },
                 onBack = { goBack(null) },
-                submitLabel = "SAVE"
+                submitLabel = "SAVE",
+                singleLine = true // Ensures no line returns allowed
             )
         }
     }
@@ -85,6 +85,13 @@ class AddStationUrlScreen(
         val state = rememberTextFieldState()
         val colors = LightThemeTokens.colors
         val scrollState = rememberScrollState()
+
+        val onAdd = {
+            val input = state.text.toString().trim()
+            if (input.isNotBlank()) {
+                goBack(Station("Untitled", input))
+            }
+        }
         
         LightTheme(colors = LightThemeColors.Dark) {
             Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
@@ -123,8 +130,8 @@ class AddStationUrlScreen(
 
                             BasicText(
                                 text = state.text.toString(),
-                                // Returning to 'Fine' variant to match keyboard key size
-                                style = LightThemeTokens.typography.fine.copy(color = colors.content),
+                                // Switched to 'Superfine' - the size between 'Fine' and 'Micro'
+                                style = LightThemeTokens.typography.superfine.copy(color = colors.content),
                                 onTextLayout = { textLayout = it },
                                 modifier = Modifier.width(IntrinsicSize.Max),
                                 maxLines = 1,
@@ -150,15 +157,8 @@ class AddStationUrlScreen(
                         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(colors.content))
                     }
 
-                val onAdd = {
-                    val input = state.text.toString().trim()
-                    if (input.isNotBlank()) {
-                        goBack(Station("Untitled", input))
-                    }
-                }
-
                     // Standard keyboard logic
-                    val callback = remember(state) {
+                    val keyboardCallback = remember(state) {
                         object : Lp3RepeatableKeyboardCallback {
                             override fun onKeyPressed(code: Int) {}
                             override fun onSpecialKeyPressed(key: SpecialKey) {}
@@ -233,7 +233,7 @@ class AddStationUrlScreen(
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 @Suppress("UNCHECKED_CAST")
                                 return EnQwertyLp3KeyboardViewModel<Unit>(
-                                    callback,
+                                    keyboardCallback,
                                     keyboardOptionsFlow = MutableStateFlow(defaultKeyboardOptions()),
                                     optionsForLayout = { LayoutOptions(!it.isRootLayout) }
                                 ) as T

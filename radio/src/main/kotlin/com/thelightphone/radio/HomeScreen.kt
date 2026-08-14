@@ -99,7 +99,9 @@ class RadioViewModel(
 
     override fun onScreenShow(screen: SimpleLightScreen<Unit>) {
         currentScreen = screen
-        // Always refresh favourite status when returning to home
+        // Reload stations and recent list whenever returning to home to stay in sync with Library
+        loadStations()
+        loadRecentStations()
         updateFavouriteState()
     }
 
@@ -139,7 +141,7 @@ class RadioViewModel(
                 val json = lastPlayedFile.readText()
                 val station = Json.decodeFromString<Station>(json)
                 stationName.value = station.name
-                streamUrl.value = station.url
+                streamUrl.value = sanitizeUrl(station.url)
             } catch (e: Exception) {
                 android.util.Log.e("RadioViewModel", "Failed to load last played", e)
             }
@@ -173,6 +175,7 @@ class RadioViewModel(
 
     /** Adds a station to the top of the history list, maintaining a max of 10 items. */
     private fun addToRecent(station: Station) {
+        loadRecentStations() // Ensure we have the latest list from disk before modifying
         val newList = recentStations.value.toMutableList()
         newList.removeAll { it.url == station.url }
         newList.add(0, station)
@@ -188,7 +191,8 @@ class RadioViewModel(
         if (isPlaying.value) {
             player.stop()
         } else {
-            val station = Station(stationName.value, streamUrl.value)
+            val sanitizedUrl = sanitizeUrl(streamUrl.value)
+            val station = Station(stationName.value, sanitizedUrl)
             val item = LightAudioItem(
                 source = LightAudioSource.UrlSource(station.url),
                 metadata = LightMediaMetadata(title = station.name)
@@ -203,7 +207,9 @@ class RadioViewModel(
 
     /** Adds or removes the current station from the user's curated Favorites list. */
     fun toggleFavourite() {
-        val currentStation = Station(stationName.value, streamUrl.value)
+        loadStations() // Ensure we have the latest list from disk before modifying
+        val sanitizedUrl = sanitizeUrl(streamUrl.value)
+        val currentStation = Station(stationName.value, sanitizedUrl)
         val newList = stations.value.toMutableList()
         val alreadyFavourite = newList.any { it.url == currentStation.url }
         
@@ -220,11 +226,8 @@ class RadioViewModel(
 
     /** Transitions the player to a new station and starts playback immediately. */
     fun playStation(station: Station) {
-        val sanitizedUrl = if (!station.url.startsWith("http://") && !station.url.startsWith("https://")) {
-            "http://${station.url}"
-        } else {
-            station.url
-        }
+        val sanitizedUrl = sanitizeUrl(station.url)
+        val sanitizedStation = Station(station.name, sanitizedUrl)
         
         android.util.Log.d("RadioViewModel", "Playing: ${station.name} | URL: $sanitizedUrl")
         stationName.value = station.name
@@ -237,8 +240,51 @@ class RadioViewModel(
         player.setMediaQueue(listOf(item))
         player.play()
         saveLastPlayed()
-        addToRecent(station)
+        addToRecent(sanitizedStation)
         updateFavouriteState()
+    }
+
+    /**
+     * Ensures URLs have a protocol and selectively appends SHOUTcast ';' suffix.
+     * We only add the suffix for raw IP addresses or URLs without a path,
+     * ensuring we don't break modern domain-based streams (like Radio NZ).
+     */
+    private fun sanitizeUrl(input: String): String {
+        var url = input.trim()
+        if (url.isBlank()) return url
+        
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "http://$url"
+        }
+        
+        // If it's already got a semicolon or is an HLS playlist, don't touch it
+        if (url.contains(";") || url.lowercase().contains(".m3u8")) {
+            return url
+        }
+
+        val protocolEnd = url.indexOf("://") + 3
+        val firstSlash = url.indexOf("/", protocolEnd)
+        
+        // 1. No path at all OR just a trailing slash -> force SHOUTcast mode
+        // (e.g. http://server:port or http://domain.com/)
+        if (firstSlash == -1 || firstSlash == url.length - 1) {
+            return if (url.endsWith("/")) "${url};" else "${url}/;"
+        }
+
+        // 2. Has a path, but is it an IP address or known SHOUTcast port?
+        val hostPart = url.substring(protocolEnd, firstSlash)
+        val isLikelyLegacyServer = hostPart.firstOrNull()?.isDigit() == true || 
+                                  hostPart.contains(":8000") || 
+                                  hostPart.contains(":18442") ||
+                                  hostPart.contains(":8002")
+        
+        if (isLikelyLegacyServer) {
+            // Append ; to the end of the URL to force stream over status page
+            return if (url.endsWith("/")) "${url};" else "${url};"
+        }
+        
+        // 3. Standard domain with a path (e.g. Radio NZ) -> leave as-is
+        return url
     }
 
     /** Navigation handlers for sub-screens */
@@ -270,20 +316,24 @@ class RadioViewModel(
         val oldUrl = streamUrl.value
         stationName.value = newName
         
+        loadStations()
+        loadRecentStations()
+        
         // Update in Favourites if present
+        // We use sanitizeUrl for comparison because the list might contain either raw or sanitized URLs
         val favs = stations.value.toMutableList()
-        val favIndex = favs.indexOfFirst { it.url == oldUrl }
+        val favIndex = favs.indexOfFirst { sanitizeUrl(it.url) == oldUrl }
         if (favIndex != -1) {
-            favs[favIndex] = Station(newName, oldUrl)
+            favs[favIndex] = Station(newName, favs[favIndex].url)
             stations.value = favs
             saveStations()
         }
 
         // Update in Recent if present
         val recents = recentStations.value.toMutableList()
-        val recentIndex = recents.indexOfFirst { it.url == oldUrl }
+        val recentIndex = recents.indexOfFirst { sanitizeUrl(it.url) == oldUrl }
         if (recentIndex != -1) {
-            recents[recentIndex] = Station(newName, oldUrl)
+            recents[recentIndex] = Station(newName, recents[recentIndex].url)
             recentStations.value = recents
             saveRecentStations()
         }
