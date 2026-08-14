@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.net.Uri
+import android.os.Build
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -80,7 +81,11 @@ class LightAudioPlayer internal constructor(
             
             // Start the background service to keep the process alive
             val intent = Intent(context, LightMediaService::class.java)
-            context.startService(intent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
             
             notifyServerOfSession(context, true)
         } catch (e: Exception) {
@@ -102,9 +107,11 @@ class LightAudioPlayer internal constructor(
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent("LightPhoneRadioTool/1.0")
             .setAllowCrossProtocolRedirects(true)
+            .setDefaultRequestProperties(mapOf("Icy-MetaData" to "1"))
 
         val mediaSourceFactory = DefaultMediaSourceFactory(context)
             .setDataSourceFactory(httpDataSourceFactory)
+            .setAdViewProvider(null) // Ensure no ad-related issues
 
         return ExoPlayer.Builder(context)
             .setMediaSourceFactory(mediaSourceFactory)
@@ -146,7 +153,7 @@ class LightAudioPlayer internal constructor(
 
                     override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
                         _error.value = error
-                        android.util.Log.e("LightAudioPlayer", "Player error", error)
+                        android.util.Log.e("LightAudioPlayer", "Player error with current stream", error)
                     }
                 })
             }
@@ -286,6 +293,7 @@ class LightAudioPlayer internal constructor(
     }
 
     /** Permanently releases playback, focus, and state-update resources. Idempotent. */
+    @androidx.annotation.OptIn(markerClass = [UnstableApi::class])
     fun release() {
         if (released) return
         released = true

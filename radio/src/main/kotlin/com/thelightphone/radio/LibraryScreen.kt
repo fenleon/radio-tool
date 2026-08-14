@@ -147,9 +147,8 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
         val favourites by viewModel.favourites.collectAsState()
         val recent by viewModel.recent.collectAsState()
         val activeTab by viewModel.activeTab.collectAsState()
-        val themeColors by LightThemeController.colors.collectAsState()
 
-        LightTheme(colors = themeColors) {
+        LightTheme(colors = LightThemeColors.Dark) {
             val colors = LightThemeTokens.colors
             Column(
                 modifier = Modifier
@@ -159,7 +158,7 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                 // Header
                 LightTopBar(
                     leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { goBack() }),
-                    center = LightTopBarCenter.Text("LIBRARY"),
+                    center = LightTopBarCenter.Text("Library"),
                 )
 
                 // Custom Tab Bar with LP3 styling
@@ -177,7 +176,7 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         LightText(
-                            text = "FAVOURITES",
+                            text = "Favourites",
                             variant = LightTextVariant.Subheading,
                             lighten = activeTab != LibraryTab.Favourites
                         )
@@ -201,7 +200,7 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         LightText(
-                            text = "RECENT",
+                            text = "Recent",
                             variant = LightTextVariant.Subheading,
                             lighten = activeTab != LibraryTab.Recent
                         )
@@ -295,22 +294,27 @@ private fun PreviewLibraryScreen() {
                 .fillMaxSize()
                 .background(LightThemeColors.Dark.background)
         ) {
-            LightTopBar(
-                leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = {}),
-                center = LightTopBarCenter.Text("LIBRARY"),
-            )
+                LightTopBar(
+                    leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = {}),
+                    center = LightTopBarCenter.Text("Library"),
+                )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    LightText(text = "FAVOURITES", variant = LightTextVariant.Subheading)
+                    // Favourites Tab
+                    Column(
+                        modifier = Modifier
+                            .weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        LightText(
+                            text = "Favourites",
+                            variant = LightTextVariant.Subheading,
+                        )
                     Box(
                         modifier = Modifier
                             .padding(top = 4.dp)
@@ -324,7 +328,7 @@ private fun PreviewLibraryScreen() {
                     modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    LightText(text = "RECENT", variant = LightTextVariant.Subheading, lighten = true)
+                    LightText(text = "Recent", variant = LightTextVariant.Subheading, lighten = true)
                 }
             }
 

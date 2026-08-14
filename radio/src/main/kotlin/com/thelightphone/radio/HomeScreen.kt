@@ -220,12 +220,18 @@ class RadioViewModel(
 
     /** Transitions the player to a new station and starts playback immediately. */
     fun playStation(station: Station) {
-        android.util.Log.d("RadioViewModel", "Playing: ${station.name} | URL: ${station.url}")
+        val sanitizedUrl = if (!station.url.startsWith("http://") && !station.url.startsWith("https://")) {
+            "http://${station.url}"
+        } else {
+            station.url
+        }
+        
+        android.util.Log.d("RadioViewModel", "Playing: ${station.name} | URL: $sanitizedUrl")
         stationName.value = station.name
-        streamUrl.value = station.url
+        streamUrl.value = sanitizedUrl
         
         val item = LightAudioItem(
-            source = LightAudioSource.UrlSource(station.url),
+            source = LightAudioSource.UrlSource(sanitizedUrl),
             metadata = LightMediaMetadata(title = station.name)
         )
         player.setMediaQueue(listOf(item))
@@ -251,8 +257,42 @@ class RadioViewModel(
         }
     }
 
+    fun openRename() {
+        val currentName = stationName.value
+        currentScreen?.navigateTo({ RenameScreen(it, currentName) }) { newName ->
+            if (newName is String && newName.isNotBlank() && newName != currentName) {
+                updateStationName(newName)
+            }
+        }
+    }
+
+    private fun updateStationName(newName: String) {
+        val oldUrl = streamUrl.value
+        stationName.value = newName
+        
+        // Update in Favourites if present
+        val favs = stations.value.toMutableList()
+        val favIndex = favs.indexOfFirst { it.url == oldUrl }
+        if (favIndex != -1) {
+            favs[favIndex] = Station(newName, oldUrl)
+            stations.value = favs
+            saveStations()
+        }
+
+        // Update in Recent if present
+        val recents = recentStations.value.toMutableList()
+        val recentIndex = recents.indexOfFirst { it.url == oldUrl }
+        if (recentIndex != -1) {
+            recents[recentIndex] = Station(newName, oldUrl)
+            recentStations.value = recents
+            saveRecentStations()
+        }
+        
+        saveLastPlayed()
+    }
+
     fun openAddStation() {
-        currentScreen?.navigateTo({ AddStationScreen(it) }) { selectedStation ->
+        currentScreen?.navigateTo({ AddStationUrlScreen(it) }) { selectedStation ->
             selectedStation?.let {
                 playStation(it)
             }
@@ -265,6 +305,11 @@ class RadioViewModel(
             // On early SDK builds for physical hardware, this may not trigger an action yet.
             callRemoteServiceMethod(LightServiceMethod.OpenBluetoothSettings, Unit)
         }
+    }
+
+    override fun onBackPressed(): Boolean {
+        currentScreen?.minimize()
+        return true
     }
 
     override fun onCleared() {
@@ -314,7 +359,7 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                 // Top Bar with standard back button and tool title
                 LightTopBar(
                     leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { minimize() }),
-                    center = LightTopBarCenter.Text("RADIO")
+                    center = LightTopBarCenter.Text("Radio")
                 )
 
                 // Main "Now Playing" area centered on screen
@@ -337,7 +382,9 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                             text = name,
                             variant = LightTextVariant.Heading,
                             align = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 40.dp)
+                            modifier = Modifier
+                                .padding(horizontal = 40.dp)
+                                .lightClickable { viewModel.openRename() }
                         )
                         
                         Box(
@@ -413,7 +460,7 @@ private fun PreviewContent() {
     ) {
         LightTopBar(
             leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = {}),
-            center = LightTopBarCenter.Text("RADIO")
+            center = LightTopBarCenter.Text("Radio")
         )
 
         Column(

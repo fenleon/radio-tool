@@ -34,8 +34,7 @@ fun LightEmbeddedLp3Keyboard(viewModel: Lp3KeyboardViewModel<*>) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(colors.background)
-                .padding(top = 10.dp),
+                .background(colors.background),
         ) {
             Lp3KeyboardWrapper(
                 layout = layout,

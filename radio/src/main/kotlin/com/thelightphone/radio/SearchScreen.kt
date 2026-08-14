@@ -151,10 +151,9 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
         val query by viewModel.query.collectAsState()
         val results by viewModel.results.collectAsState()
         val searching by viewModel.isSearching.collectAsState()
-        val themeColors by LightThemeController.colors.collectAsState()
         val focusManager = LocalFocusManager.current
 
-        LightTheme(colors = themeColors) {
+        LightTheme(colors = LightThemeColors.Dark) {
             val colors = LightThemeTokens.colors
             Column(
                 modifier = Modifier
@@ -164,7 +163,7 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                 // Top Bar with Search action
                 LightTopBar(
                     leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { goBack() }),
-                    center = LightTopBarCenter.Text("FIND STATIONS"),
+                    center = LightTopBarCenter.Text("Find stations"),
                     rightButton = LightBarButton.LightIcon(
                         icon = LightIcons.SEARCH,
                         onClick = {
@@ -257,7 +256,7 @@ private fun PreviewSearchScreen() {
         ) {
             LightTopBar(
                 leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = {}),
-                center = LightTopBarCenter.Text("FIND STATIONS"),
+                center = LightTopBarCenter.Text("Find stations"),
                 rightButton = LightBarButton.LightIcon(icon = LightIcons.SEARCH, onClick = {})
             )
 
