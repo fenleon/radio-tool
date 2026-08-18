@@ -178,20 +178,22 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                             .lightClickable { viewModel.setActiveTab(LibraryTab.Favourites) },
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        LightText(
-                            text = "Favourites",
-                            variant = LightTextVariant.Subheading,
-                            lighten = activeTab != LibraryTab.Favourites
-                        )
-                        // Underline indicator for active tab
-                        if (activeTab == LibraryTab.Favourites) {
-                            Box(
-                                modifier = Modifier
-                                    .padding(top = 4.dp)
-                                    .fillMaxWidth(0.6f)
-                                    .height(2.dp)
-                                    .background(colors.content)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            LightText(
+                                text = "Favourites",
+                                variant = LightTextVariant.Subheading,
+                                lighten = activeTab != LibraryTab.Favourites
                             )
+                            // Underline indicator for the active tab — hugs the label
+                            if (activeTab == LibraryTab.Favourites) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(top = 4.dp)
+                                        .fillMaxWidth()
+                                        .height(2.dp)
+                                        .background(colors.content)
+                                )
+                            }
                         }
                     }
 
@@ -202,20 +204,22 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                             .lightClickable { viewModel.setActiveTab(LibraryTab.Recent) },
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        LightText(
-                            text = "Recent",
-                            variant = LightTextVariant.Subheading,
-                            lighten = activeTab != LibraryTab.Recent
-                        )
-                        // Underline indicator for active tab
-                        if (activeTab == LibraryTab.Recent) {
-                            Box(
-                                modifier = Modifier
-                                    .padding(top = 4.dp)
-                                    .fillMaxWidth(0.6f)
-                                    .height(2.dp)
-                                    .background(colors.content)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            LightText(
+                                text = "Recent",
+                                variant = LightTextVariant.Subheading,
+                                lighten = activeTab != LibraryTab.Recent
                             )
+                            // Underline indicator for the active tab — hugs the label
+                            if (activeTab == LibraryTab.Recent) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(top = 4.dp)
+                                        .fillMaxWidth()
+                                        .height(2.dp)
+                                        .background(colors.content)
+                                )
+                            }
                         }
                     }
                 }
@@ -238,9 +242,9 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                         )
                     }
                 } else {
-                    // Scrollbar flush right — the content carries the side padding
+                    // Scrollbar flush right — rows carry their own side padding
                     LightScrollView(modifier = Modifier.weight(1f)) {
-                        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                        Column {
                             currentList.forEach { station ->
                                 StationRow(
                                     station = station,
@@ -275,6 +279,7 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                 modifier = Modifier
                     .weight(1f)
                     .lightClickable(onClick = onPlay)
+                    .padding(start = 24.dp, end = 16.dp)
             ) {
                 LightText(
                     text = station.name,
@@ -285,11 +290,11 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                 LightText(text = station.url, variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
             }
             
-            // Delete button
+            // Delete button — flush right
             Box(
                 modifier = Modifier
-                    .padding(start = 16.dp)
                     .lightClickable(onClick = onDelete)
+                    .padding(end = 8.dp)
             ) {
                 com.thelightphone.sdk.ui.LightIcon(
                     icon = LightIcons.CLOSE,

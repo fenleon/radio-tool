@@ -45,6 +45,7 @@ import com.thelightphone.sdk.LightViewModel
 import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.ui.LightBarButton
+import com.thelightphone.sdk.ui.LightBottomBar
 import com.thelightphone.sdk.ui.LightIcons
 import com.thelightphone.sdk.ui.LightScrollView
 import com.thelightphone.sdk.ui.LightText
@@ -108,6 +109,8 @@ class SearchViewModel : RadioBaseViewModel<Station?>() {
     val query = MutableStateFlow("")
     val results = MutableStateFlow<List<RadioBrowserStation>>(emptyList())
     val isSearching = MutableStateFlow(false)
+    /** True once at least one search has completed (drives "No results found"). */
+    val hasSearched = MutableStateFlow(false)
 
     override fun onScreenShow(screen: SimpleLightScreen<Station?>) {
         currentScreen = screen
@@ -143,6 +146,7 @@ class SearchViewModel : RadioBaseViewModel<Station?>() {
                 results.value = emptyList()
             } finally {
                 isSearching.value = false
+                hasSearched.value = true
             }
         }
     }
@@ -150,20 +154,6 @@ class SearchViewModel : RadioBaseViewModel<Station?>() {
     /** Whether the input is a direct stream URL rather than a search term. */
     private fun looksLikeUrl(input: String): Boolean =
         input.contains("://") || (input.contains(".") && !input.contains(" "))
-
-    /**
-     * Single entry point for the merged field: a URL plays directly, anything
-     * else searches the directory.
-     */
-    fun submit() {
-        val input = query.value.trim()
-        if (input.isBlank()) return
-        if (looksLikeUrl(input)) {
-            selectUrl(input)
-        } else {
-            search()
-        }
-    }
 
     /** Whether the current query reads as a direct URL (drives the "Play this URL" row). */
     fun queryLooksLikeUrl(): Boolean = looksLikeUrl(query.value.trim())
@@ -206,6 +196,7 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
     override fun Content() {
         val results by viewModel.results.collectAsState()
         val searching by viewModel.isSearching.collectAsState()
+        val hasSearched by viewModel.hasSearched.collectAsState()
         val query by viewModel.query.collectAsState()
         val isUrl = viewModel.queryLooksLikeUrl()
         val volumePanel by viewModel.volumePanel.collectAsState()
@@ -217,13 +208,24 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
             viewModel.updateQuery(state.text.toString())
         }
 
-        // The keyboard hides after submitting a search; tap the input row to
-        // bring it back (results then get the full screen).
+        // Podcast-style flow: a typing view and a separate "Search Results"
+        // view; back from results returns to editing the query.
+        var showResults by remember { mutableStateOf(false) }
         var showKeyboard by remember { mutableStateOf(true) }
 
         val onSubmit = {
-            showKeyboard = false
-            viewModel.submit()
+            if (viewModel.queryLooksLikeUrl()) {
+                viewModel.selectUrl(query) // direct URL — pops back to Home
+            } else {
+                showResults = true
+                showKeyboard = false
+                viewModel.search()
+            }
+        }
+
+        fun backToSearch() {
+            showResults = false
+            showKeyboard = true
         }
 
         LightTheme(colors = LightThemeColors.Dark) {
@@ -234,95 +236,117 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                         .fillMaxSize()
                         .background(colors.background)
                 ) {
-                // Top Bar: back + title (no search action — the keyboard submits)
-                LightTopBar(
-                    leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { goBack() }),
-                    center = LightTopBarCenter.Text("Find stations"),
-                )
+                if (showResults) {
+                    // ---- Search Results view (podcast style: no query shown) ----
+                    LightTopBar(
+                        leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { backToSearch() }),
+                        center = LightTopBarCenter.Text("Search Results"),
+                    )
 
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                        // "Search stations or enter a URL..." label
-                        LightText(
-                            text = "Search stations or enter a URL",
-                            variant = LightTextVariant.Detail,
-                            lighten = true,
-                            modifier = Modifier.padding(top = 1f.gridUnitsAsDp(), bottom = 0.5f.gridUnitsAsDp())
-                        )
-
-                        // Horizontally scrollable text area (the LP3 input row);
-                        // tap it to bring the keyboard back
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState())
-                                .lightClickable { showKeyboard = true }
-                        ) {
-                            var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
-
-                            BasicText(
-                                text = state.text.toString(),
-                                style = LightThemeTokens.typography.superfine.copy(color = colors.content),
-                                onTextLayout = { textLayout = it },
-                                modifier = Modifier.width(IntrinsicSize.Max),
-                                maxLines = 1,
-                                softWrap = false
-                            )
-
-                            // Cursor
-                            textLayout?.let { layout ->
-                                val cursorPos = state.selection.min.coerceIn(0, layout.layoutInput.text.length)
-                                val rect = layout.getCursorRect(cursorPos)
-                                Box(
-                                    modifier = Modifier
-                                        .offset { IntOffset(rect.left.toInt(), rect.top.toInt()) }
-                                        .width(1.5.dp)
-                                        .height(with(LocalDensity.current) { rect.height.toDp() })
-                                        .background(colors.content),
-                                )
-                            }
-                        }
-
-                        // Fixed underline below the scrollable box
-                        Spacer(modifier = Modifier.height(0.5f.gridUnitsAsDp()))
-                        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(colors.content))
-
-                        // Direct URL detected — offer to play it immediately
-                        if (isUrl) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .lightClickable(onClick = { viewModel.selectUrl(query) })
-                                    .padding(vertical = 12.dp)
-                            ) {
-                                LightText(text = "Play this URL", variant = LightTextVariant.Copy)
-                                LightText(text = query.trim(), variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
-                            }
-                        }
-
-                        // User feedback during search
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
                         if (searching) {
-                            LightText("Searching...", variant = LightTextVariant.Detail, lighten = true)
-                        } else if (!isUrl && query.length > 2 && results.isEmpty()) {
-                            LightText("No results found", variant = LightTextVariant.Detail, lighten = true)
+                            LightText(
+                                text = "Searching...",
+                                variant = LightTextVariant.Detail,
+                                lighten = true,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                            )
+                        } else if (hasSearched && results.isEmpty()) {
+                            LightText(
+                                text = "No results found",
+                                variant = LightTextVariant.Detail,
+                                lighten = true,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
+                            )
                         }
-                    }
 
-                    // List of search results — scrollbar flush right
-                    LightScrollView(modifier = Modifier.weight(1f)) {
-                        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                            results.forEach { station ->
-                                SearchResultRow(station) {
-                                    viewModel.selectStation(station)
+                        // List of search results — scrollbar flush right
+                        LightScrollView(modifier = Modifier.weight(1f)) {
+                            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                                results.forEach { station ->
+                                    SearchResultRow(station) {
+                                        viewModel.selectStation(station)
+                                    }
                                 }
                             }
                         }
                     }
-                }
+                } else {
+                    // ---- Find Stations (typing) view ----
+                    LightTopBar(
+                        leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { goBack() }),
+                        center = LightTopBarCenter.Text("Find Stations"),
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                            // "Search stations or enter a URL..." label
+                            LightText(
+                                text = "Search stations or enter a URL",
+                                variant = LightTextVariant.Detail,
+                                lighten = true,
+                                modifier = Modifier.padding(top = 1f.gridUnitsAsDp(), bottom = 0.5f.gridUnitsAsDp())
+                            )
+
+                            // Horizontally scrollable text area (the LP3 input row);
+                            // tap it to bring the keyboard back
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                                    .lightClickable { showKeyboard = true }
+                            ) {
+                                var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+                                BasicText(
+                                    text = state.text.toString(),
+                                    style = LightThemeTokens.typography.heading.copy(color = colors.content),
+                                    onTextLayout = { textLayout = it },
+                                    modifier = Modifier.width(IntrinsicSize.Max),
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+
+                                // Cursor
+                                textLayout?.let { layout ->
+                                    val cursorPos = state.selection.min.coerceIn(0, layout.layoutInput.text.length)
+                                    val rect = layout.getCursorRect(cursorPos)
+                                    Box(
+                                        modifier = Modifier
+                                            .offset { IntOffset(rect.left.toInt(), rect.top.toInt()) }
+                                            .width(1.5.dp)
+                                            .height(with(LocalDensity.current) { rect.height.toDp() })
+                                            .background(colors.content),
+                                    )
+                                }
+                            }
+
+                            // Fixed underline below the scrollable box
+                            Spacer(modifier = Modifier.height(0.5f.gridUnitsAsDp()))
+                            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(colors.content))
+
+                            // Direct URL detected — offer to play it immediately
+                            if (isUrl) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .lightClickable(onClick = { viewModel.selectUrl(query) })
+                                        .padding(vertical = 12.dp)
+                                ) {
+                                    LightText(text = "Play this URL", variant = LightTextVariant.Copy)
+                                    LightText(text = query.trim(), variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
+                                }
+                            }
+                        }
+                    }
 
                 // Standard keyboard logic (LightSDK embedded keyboard)
                 val keyboardCallback = remember(state) {
@@ -401,12 +425,12 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                             @Suppress("UNCHECKED_CAST")
                             return EnQwertyLp3KeyboardViewModel<Unit>(
                                 keyboardCallback,
-                                // No emoji row, like the native podcast keyboard
+                                // No emoji or mic rows, like the native podcast keyboard
                                 keyboardOptionsFlow = MutableStateFlow(
                                     KeyboardOptions(
                                         emojis = emptyList(),
                                         displayReturn = true,
-                                        displayVoice = true,
+                                        displayVoice = false,
                                         enableKeyAnimation = true,
                                         swipeEnabled = false,
                                     )
@@ -417,9 +441,20 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                     }
                 )
 
-                // The keyboard sits flush at the bottom; it hides after a search
+                // Keyboard flush above the bottom bar; the search icon below it
+                // submits the search
                 if (showKeyboard) {
                     LightEmbeddedLp3Keyboard(viewModel = keyboardViewModel)
+                }
+
+                LightBottomBar(
+                    items = listOf(
+                        LightBarButton.LightIcon(
+                            icon = LightIcons.SEARCH,
+                            onClick = onSubmit
+                        )
+                    )
+                )
                 }
                 }
 
