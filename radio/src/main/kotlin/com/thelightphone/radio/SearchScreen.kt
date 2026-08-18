@@ -35,6 +35,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.thelightphone.lp3Keyboard.ui.KeyboardOptions
 import com.thelightphone.lp3Keyboard.ui.LayoutOptions
 import com.thelightphone.lp3Keyboard.ui.SpecialKey
 import com.thelightphone.lp3Keyboard.ui.viewmodel.EnQwertyLp3KeyboardViewModel
@@ -44,7 +45,6 @@ import com.thelightphone.sdk.LightViewModel
 import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.ui.LightBarButton
-import com.thelightphone.sdk.ui.LightBottomBar
 import com.thelightphone.sdk.ui.LightIcons
 import com.thelightphone.sdk.ui.LightScrollView
 import com.thelightphone.sdk.ui.LightText
@@ -54,7 +54,6 @@ import com.thelightphone.sdk.ui.LightThemeColors
 import com.thelightphone.sdk.ui.LightThemeTokens
 import com.thelightphone.sdk.ui.LightTopBar
 import com.thelightphone.sdk.ui.LightTopBarCenter
-import com.thelightphone.sdk.ui.defaultKeyboardOptions
 import com.thelightphone.sdk.ui.gridUnitsAsDp
 import com.thelightphone.sdk.ui.keyboard.LightEmbeddedLp3Keyboard
 import com.thelightphone.sdk.ui.lightClickable
@@ -218,7 +217,12 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
             viewModel.updateQuery(state.text.toString())
         }
 
+        // The keyboard hides after submitting a search; tap the input row to
+        // bring it back (results then get the full screen).
+        var showKeyboard by remember { mutableStateOf(true) }
+
         val onSubmit = {
+            showKeyboard = false
             viewModel.submit()
         }
 
@@ -240,74 +244,77 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
                 ) {
-                    // "Search stations or enter a URL..." label
-                    LightText(
-                        text = "Search stations or enter a URL",
-                        variant = LightTextVariant.Detail,
-                        lighten = true,
-                        modifier = Modifier.padding(top = 1f.gridUnitsAsDp(), bottom = 0.5f.gridUnitsAsDp())
-                    )
-
-                    // Horizontally scrollable text area (the LP3 input row)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
-                    ) {
-                        var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
-
-                        BasicText(
-                            text = state.text.toString(),
-                            style = LightThemeTokens.typography.superfine.copy(color = colors.content),
-                            onTextLayout = { textLayout = it },
-                            modifier = Modifier.width(IntrinsicSize.Max),
-                            maxLines = 1,
-                            softWrap = false
+                    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                        // "Search stations or enter a URL..." label
+                        LightText(
+                            text = "Search stations or enter a URL",
+                            variant = LightTextVariant.Detail,
+                            lighten = true,
+                            modifier = Modifier.padding(top = 1f.gridUnitsAsDp(), bottom = 0.5f.gridUnitsAsDp())
                         )
 
-                        // Cursor
-                        textLayout?.let { layout ->
-                            val cursorPos = state.selection.min.coerceIn(0, layout.layoutInput.text.length)
-                            val rect = layout.getCursorRect(cursorPos)
-                            Box(
-                                modifier = Modifier
-                                    .offset { IntOffset(rect.left.toInt(), rect.top.toInt()) }
-                                    .width(1.5.dp)
-                                    .height(with(LocalDensity.current) { rect.height.toDp() })
-                                    .background(colors.content),
-                            )
-                        }
-                    }
-
-                    // Fixed underline below the scrollable box
-                    Spacer(modifier = Modifier.height(0.5f.gridUnitsAsDp()))
-                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(colors.content))
-
-                    // Direct URL detected — offer to play it immediately
-                    if (isUrl) {
-                        Column(
+                        // Horizontally scrollable text area (the LP3 input row);
+                        // tap it to bring the keyboard back
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .lightClickable(onClick = { viewModel.selectUrl(query) })
-                                .padding(vertical = 12.dp)
+                                .horizontalScroll(rememberScrollState())
+                                .lightClickable { showKeyboard = true }
                         ) {
-                            LightText(text = "Play this URL", variant = LightTextVariant.Copy)
-                            LightText(text = query.trim(), variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
+                            var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+                            BasicText(
+                                text = state.text.toString(),
+                                style = LightThemeTokens.typography.superfine.copy(color = colors.content),
+                                onTextLayout = { textLayout = it },
+                                modifier = Modifier.width(IntrinsicSize.Max),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+
+                            // Cursor
+                            textLayout?.let { layout ->
+                                val cursorPos = state.selection.min.coerceIn(0, layout.layoutInput.text.length)
+                                val rect = layout.getCursorRect(cursorPos)
+                                Box(
+                                    modifier = Modifier
+                                        .offset { IntOffset(rect.left.toInt(), rect.top.toInt()) }
+                                        .width(1.5.dp)
+                                        .height(with(LocalDensity.current) { rect.height.toDp() })
+                                        .background(colors.content),
+                                )
+                            }
+                        }
+
+                        // Fixed underline below the scrollable box
+                        Spacer(modifier = Modifier.height(0.5f.gridUnitsAsDp()))
+                        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(colors.content))
+
+                        // Direct URL detected — offer to play it immediately
+                        if (isUrl) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .lightClickable(onClick = { viewModel.selectUrl(query) })
+                                    .padding(vertical = 12.dp)
+                            ) {
+                                LightText(text = "Play this URL", variant = LightTextVariant.Copy)
+                                LightText(text = query.trim(), variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
+                            }
+                        }
+
+                        // User feedback during search
+                        if (searching) {
+                            LightText("Searching...", variant = LightTextVariant.Detail, lighten = true)
+                        } else if (!isUrl && query.length > 2 && results.isEmpty()) {
+                            LightText("No results found", variant = LightTextVariant.Detail, lighten = true)
                         }
                     }
 
-                    // User feedback during search
-                    if (searching) {
-                        LightText("Searching...", variant = LightTextVariant.Detail, lighten = true)
-                    } else if (!isUrl && query.length > 2 && results.isEmpty()) {
-                        LightText("No results found", variant = LightTextVariant.Detail, lighten = true)
-                    }
-
-                    // List of search results
+                    // List of search results — scrollbar flush right
                     LightScrollView(modifier = Modifier.weight(1f)) {
-                        Column {
+                        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                             results.forEach { station ->
                                 SearchResultRow(station) {
                                     viewModel.selectStation(station)
@@ -394,23 +401,26 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                             @Suppress("UNCHECKED_CAST")
                             return EnQwertyLp3KeyboardViewModel<Unit>(
                                 keyboardCallback,
-                                keyboardOptionsFlow = MutableStateFlow(defaultKeyboardOptions()),
+                                // No emoji row, like the native podcast keyboard
+                                keyboardOptionsFlow = MutableStateFlow(
+                                    KeyboardOptions(
+                                        emojis = emptyList(),
+                                        displayReturn = true,
+                                        displayVoice = true,
+                                        enableKeyAnimation = true,
+                                        swipeEnabled = false,
+                                    )
+                                ),
                                 optionsForLayout = { LayoutOptions(!it.isRootLayout) }
-                            ) as T
+                            ).apply { setCapsMode(true) } as T
                         }
                     }
                 )
 
-                LightEmbeddedLp3Keyboard(viewModel = keyboardViewModel)
-
-                LightBottomBar(
-                    items = listOf(
-                        LightBarButton.LightIcon(
-                            icon = LightIcons.SEARCH,
-                            onClick = onSubmit
-                        )
-                    )
-                )
+                // The keyboard sits flush at the bottom; it hides after a search
+                if (showKeyboard) {
+                    LightEmbeddedLp3Keyboard(viewModel = keyboardViewModel)
+                }
                 }
 
                 // Full-screen overlay on top of everything (visual replica — not interactive)

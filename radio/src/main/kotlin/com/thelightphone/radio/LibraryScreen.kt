@@ -238,8 +238,9 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                         )
                     }
                 } else {
-                    LightScrollView(modifier = Modifier.weight(1f).padding(horizontal = 24.dp)) {
-                        Column {
+                    // Scrollbar flush right — the content carries the side padding
+                    LightScrollView(modifier = Modifier.weight(1f)) {
+                        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                             currentList.forEach { station ->
                                 StationRow(
                                     station = station,

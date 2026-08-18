@@ -403,7 +403,10 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                         .fillMaxSize()
                         .background(colors.background)
                 ) {
-                // No top bar — the Home is a player home (tool button minimizes)
+                // Top bar: title only — the tool button (KEYCODE_HOME) minimizes
+                LightTopBar(
+                    center = LightTopBarCenter.Text("Radio")
+                )
 
                 // Main "Now Playing" area centered on screen
                 Column(
