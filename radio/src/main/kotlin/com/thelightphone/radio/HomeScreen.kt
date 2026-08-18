@@ -79,7 +79,7 @@ class RadioViewModel(
     
     // Observable state for the UI
     val streamUrl = MutableStateFlow("https://stream.radiokps.nz/")
-    val stationName = MutableStateFlow("Radio")
+    val stationName = MutableStateFlow("No Station Selected")
     val stations = MutableStateFlow<List<Station>>(emptyList())
     val recentStations = MutableStateFlow<List<Station>>(emptyList())
     
