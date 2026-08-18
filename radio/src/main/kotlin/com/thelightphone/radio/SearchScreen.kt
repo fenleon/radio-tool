@@ -308,13 +308,19 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
 
                             // Horizontally scrollable text area (the LP3 input row);
                             // tap it to bring the keyboard back
+                            val inputScrollState = rememberScrollState()
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState())
+                                    .horizontalScroll(inputScrollState)
                                     .lightClickable { showKeyboard = true }
                             ) {
                                 var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+                                // Auto-scroll to keep the cursor in view while typing
+                                LaunchedEffect(state.text) {
+                                    inputScrollState.animateScrollTo(inputScrollState.maxValue)
+                                }
 
                                 BasicText(
                                     text = state.text.toString(),
