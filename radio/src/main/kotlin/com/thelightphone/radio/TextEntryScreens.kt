@@ -3,13 +3,13 @@ package com.thelightphone.radio
 
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
+import com.thelightphone.lp3Keyboard.ui.KeyboardOptions
 import com.thelightphone.sdk.LightScreen
 import com.thelightphone.sdk.LightViewModel
 import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.ui.LightTextInputEditor
 import com.thelightphone.sdk.ui.LightTheme
 import com.thelightphone.sdk.ui.LightThemeColors
-import com.thelightphone.sdk.ui.defaultKeyboardOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
@@ -36,7 +36,16 @@ class RenameScreen(
             LightTextInputEditor(
                 title = "Rename",
                 state = state,
-                keyboardOptionsFlow = MutableStateFlow(defaultKeyboardOptions()),
+                keyboardOptionsFlow = MutableStateFlow(
+                    // No emoji, mic, or enter keys — like the native podcast keyboard
+                    KeyboardOptions(
+                        emojis = emptyList(),
+                        displayReturn = false,
+                        displayVoice = false,
+                        enableKeyAnimation = true,
+                        swipeEnabled = false,
+                    )
+                ),
                 onSubmit = { 
                     val trimmed = it.toString().trim()
                     if (trimmed.isNotBlank()) {

@@ -10,19 +10,32 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Tracks the media-stream volume (level of max) with no permissions: a
- * dynamic [AudioManager.VOLUME_CHANGED_ACTION] receiver plus direct
- * AudioManager reads. Started by [LightMediaService] so the tool never needs
- * Context access (the tool plugin bans it). Tools read [state] directly from
- * Compose to drive the volume panel.
+ * Tracks the media and ringer volumes (level of max) with no permissions: a
+ * dynamic [VOLUME_CHANGED_ACTION] receiver plus direct AudioManager reads.
+ * Started by [LightMediaService] so the tool never needs Context access (the
+ * tool plugin bans it). Tools read [state] directly from Compose to drive the
+ * volume panel.
+ *
+ * Both streams are tracked because the rocker adjusts whichever stream is
+ * "active": media while audio plays, ringer otherwise — the panel shows the
+ * Media or Ringer replica accordingly.
  */
 object LightVolume {
-    /** Media-stream volume; [max] is 0 until the first read. */
-    data class State(val level: Int, val max: Int)
+    /**
+     * Volume snapshot. A stream's max is 0 until its first read.
+     * [ringerMode] is [AudioManager.RINGER_MODE_NORMAL]/[_SILENT]/[_VIBRATE].
+     */
+    data class State(
+        val mediaLevel: Int = 0,
+        val mediaMax: Int = 0,
+        val ringerLevel: Int = 0,
+        val ringerMax: Int = 0,
+        val ringerMode: Int = AudioManager.RINGER_MODE_NORMAL,
+    )
 
-    private val _state = MutableStateFlow(State(0, 0))
+    private val _state = MutableStateFlow(State())
 
-    /** Current media-stream volume, level of max. */
+    /** Current volume snapshot (media + ringer). */
     val state: StateFlow<State> = _state
 
     @Volatile
@@ -57,8 +70,11 @@ object LightVolume {
 
     private fun update(audio: AudioManager) {
         _state.value = State(
-            level = audio.getStreamVolume(AudioManager.STREAM_MUSIC),
-            max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
+            mediaLevel = audio.getStreamVolume(AudioManager.STREAM_MUSIC),
+            mediaMax = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
+            ringerLevel = audio.getStreamVolume(AudioManager.STREAM_RING),
+            ringerMax = audio.getStreamMaxVolume(AudioManager.STREAM_RING),
+            ringerMode = audio.ringerMode,
         )
     }
 }

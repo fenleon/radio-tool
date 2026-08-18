@@ -113,6 +113,7 @@ class SearchViewModel : RadioBaseViewModel<Station?>() {
     val hasSearched = MutableStateFlow(false)
 
     override fun onScreenShow(screen: SimpleLightScreen<Station?>) {
+        super.onScreenShow(screen)
         currentScreen = screen
     }
 

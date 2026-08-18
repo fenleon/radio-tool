@@ -66,6 +66,7 @@ class LibraryViewModel(private val filesDir: File) : RadioBaseViewModel<Station?
     }
 
     override fun onScreenShow(screen: SimpleLightScreen<Station?>) {
+        super.onScreenShow(screen)
         currentScreen = screen
     }
 

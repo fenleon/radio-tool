@@ -100,6 +100,7 @@ class RadioViewModel(
     }
 
     override fun onScreenShow(screen: SimpleLightScreen<Unit>) {
+        super.onScreenShow(screen)
         currentScreen = screen
         // Reload stations and recent list whenever returning to home to stay in sync with Library
         loadStations()
