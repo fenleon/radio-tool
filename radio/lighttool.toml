@@ -10,7 +10,9 @@ permissions = [
     "android.permission.FOREGROUND_SERVICE",
     "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
 ]
-serverPackage = "com.thelightphone.sdk.emulator"
+# Real LP3: com.lightos (LightOS's own SDK server). Emulator: flip to
+# com.thelightphone.sdk.emulator (or pm grant CAMERA/BLUETOOTH there).
+serverPackage = "com.lightos"
 sharedUserId = "com.thelightphone.sdk"
 orientation = "portrait"
 enableBackgroundAudio = true
