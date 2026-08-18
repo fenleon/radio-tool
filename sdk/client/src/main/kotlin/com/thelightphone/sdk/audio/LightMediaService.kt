@@ -9,6 +9,7 @@ import android.content.pm.ServiceInfo
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.PowerManager
+import android.provider.Settings
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
@@ -39,6 +40,23 @@ class LightMediaService : MediaSessionService() {
             activeSession = session
             instance?.attachToSession()
         }
+
+        /**
+         * Opens the system Bluetooth settings. The platform server's
+         * OpenBluetoothSettings bridge isn't implemented on every device, so
+         * the service (which holds Context in the tool's process) launches
+         * the settings activity directly.
+         */
+        fun openBluetoothSettings() {
+            instance?.let { service ->
+                runCatching {
+                    service.startActivity(
+                        Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                }
+            }
+        }
     }
 
     private var attachedPlayer: Player? = null
@@ -51,6 +69,7 @@ class LightMediaService : MediaSessionService() {
         startForegroundServiceWithNotification()
         attachToSession()
         LightBluetooth.observe(this)
+        LightVolume.observe(this)
     }
 
     /**

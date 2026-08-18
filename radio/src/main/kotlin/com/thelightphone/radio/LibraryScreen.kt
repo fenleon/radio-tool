@@ -49,7 +49,7 @@ enum class LibraryTab {
 /**
  * logic for managing the local station library.
  */
-class LibraryViewModel(private val filesDir: File) : LightViewModel<Station?>() {
+class LibraryViewModel(private val filesDir: File) : RadioBaseViewModel<Station?>() {
     private val stationsFile = File(filesDir, "stations.json")
     private val recentPlayedFile = File(filesDir, "recent_played.json")
     
@@ -148,17 +148,20 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
         val favourites by viewModel.favourites.collectAsState()
         val recent by viewModel.recent.collectAsState()
         val activeTab by viewModel.activeTab.collectAsState()
+        val volumePanel by viewModel.volumePanel.collectAsState()
 
         LightTheme(colors = LightThemeColors.Dark) {
             val colors = LightThemeTokens.colors
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(colors.background)
-            ) {
-                // Header: title doubles as the back affordance (no back arrow)
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(colors.background)
+                ) {
+                // Header
                 LightTopBar(
-                    center = LightTopBarCenter.Text("Library", onClick = { goBack() }),
+                    leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { goBack() }),
+                    center = LightTopBarCenter.Text("Library"),
                 )
 
                 // Custom Tab Bar with LP3 styling
@@ -247,6 +250,13 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                         }
                     }
                 }
+            }
+
+                // Full-screen overlay on top of everything (visual replica — not interactive)
+                VolumePanelOverlay(
+                    state = volumePanel,
+                    onDismiss = { viewModel.dismissVolumePanel() },
+                )
             }
         }
     }

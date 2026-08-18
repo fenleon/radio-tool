@@ -65,7 +65,7 @@ data class Station(val name: String, val url: String)
 class RadioViewModel(
     filesDir: File,
     private val sealedActivity: SealedLightActivity
-) : LightViewModel<Unit>() {
+) : RadioBaseViewModel<Unit>() {
     // SDK provided audio player wrapper
     private val audio = DefaultLightAudio(sealedActivity)
     private val player: LightAudioPlayer = audio.newPlayer()
@@ -344,11 +344,10 @@ class RadioViewModel(
     }
 
     fun openBluetooth() {
-        viewModelScope.launch {
-            // This relies on the LightOS server implementing this custom bridge method.
-            // On early SDK builds for physical hardware, this may not trigger an action yet.
-            callRemoteServiceMethod(LightServiceMethod.OpenBluetoothSettings, Unit)
-        }
+        // The SDK service launches the system Bluetooth settings directly;
+        // the platform server's OpenBluetoothSettings bridge isn't
+        // implemented on every device.
+        com.thelightphone.sdk.audio.LightMediaService.openBluetoothSettings()
     }
 
     override fun onBackPressed(): Boolean {
@@ -384,6 +383,7 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
         val isFavourite by viewModel.isFavourite.collectAsState()
         val mediaMetadata by viewModel.mediaMetadata.collectAsState()
         val bluetoothConnected by viewModel.bluetoothConnected.collectAsState()
+        val volumePanel by viewModel.volumePanel.collectAsState()
         val themeColors by LightThemeController.colors.collectAsState()
 
         // Derive user-friendly status text from ExoPlayer states
@@ -397,15 +397,13 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
         // Apply the standard Light Phone theme (follows system-wide Light/Dark mode)
         LightTheme(colors = themeColors) {
             val colors = LightThemeTokens.colors
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(colors.background)
-            ) {
-                // Top bar: title only — the tool button (KEYCODE_HOME) minimizes
-                LightTopBar(
-                    center = LightTopBarCenter.Text("Radio")
-                )
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(colors.background)
+                ) {
+                // No top bar — the Home is a player home (tool button minimizes)
 
                 // Main "Now Playing" area centered on screen
                 Column(
@@ -497,6 +495,13 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                         )
                     )
                 )
+                }
+
+                // Full-screen overlay on top of everything (visual replica — not interactive)
+                VolumePanelOverlay(
+                    state = volumePanel,
+                    onDismiss = { viewModel.dismissVolumePanel() },
+                )
             }
         }
     }
@@ -526,10 +531,6 @@ private fun PreviewContent() {
             .fillMaxSize()
             .background(colors.background)
     ) {
-        LightTopBar(
-            center = LightTopBarCenter.Text("Radio")
-        )
-
         Column(
             modifier = Modifier
                 .weight(1f)
