@@ -461,8 +461,8 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                             LightBottomBar(
                                 topPadding = 0.dp,
                                 items = listOf(
-                                    LightBarButton.Text(
-                                        text = "SEARCH",
+                                    LightBarButton.LightIcon(
+                                        icon = LightIcons.SEARCH,
                                         onClick = onSubmit,
                                     )
                                 ),
