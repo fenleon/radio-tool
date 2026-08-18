@@ -1,23 +1,39 @@
 package com.thelightphone.radio
 
 import android.view.KeyEvent
+import androidx.lifecycle.viewModelScope
 import com.thelightphone.sdk.LightViewModel
 import com.thelightphone.sdk.audio.LightVolume
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * Base view model for every Radio screen — owns the volume panel.
  *
- * The LP3's volume rocker arrives here first (LightKeyHandler → the top
- * screen's VM): show the in-app volume panel instantly using [LightVolume]'s
- * last-known level, then let the key fall through to LightOS, which adjusts
- * the actual media stream (the VOLUME_CHANGED_ACTION receiver in LightVolume
- * keeps the displayed level honest).
+ * The LP3's rocker adjusts the media stream itself and broadcasts
+ * VOLUME_CHANGED_ACTION (the SDK never forwards volume keys to the screen —
+ * LightActivity routes them to super). So the panel is driven by
+ * [LightVolume]'s receiver: every real volume change is surfaced here.
+ * [onKeyDown] remains as a fallback for devices that do deliver volume keys.
  */
 abstract class RadioBaseViewModel<T> : LightViewModel<T>() {
 
     /** The volume panel's state (null = hidden). Hosted by every screen's root. */
     val volumePanel = MutableStateFlow<VolumePanelState?>(null)
+
+    init {
+        viewModelScope.launch {
+            var last: LightVolume.State? = null
+            LightVolume.state.collect { current ->
+                // The first emission is the initial read (a seed, not a change).
+                val lastLevel = last?.level
+                if (lastLevel != null && current.level != lastLevel && current.max > 0) {
+                    volumePanel.value = VolumePanelState.Media(current.level, current.max)
+                }
+                last = current
+            }
+        }
+    }
 
     fun dismissVolumePanel() {
         volumePanel.value = null

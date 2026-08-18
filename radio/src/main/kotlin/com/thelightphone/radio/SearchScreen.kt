@@ -308,7 +308,7 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
 
                                 BasicText(
                                     text = state.text.toString(),
-                                    style = LightThemeTokens.typography.heading.copy(color = colors.content),
+                                    style = LightThemeTokens.typography.subheading.copy(color = colors.content),
                                     onTextLayout = { textLayout = it },
                                     modifier = Modifier.width(IntrinsicSize.Max),
                                     maxLines = 1,
@@ -425,11 +425,12 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                             @Suppress("UNCHECKED_CAST")
                             return EnQwertyLp3KeyboardViewModel<Unit>(
                                 keyboardCallback,
-                                // No emoji or mic rows, like the native podcast keyboard
+                                // No emoji, mic, or enter rows — like the native
+                                // podcast keyboard (submit via the bottom-bar icon)
                                 keyboardOptionsFlow = MutableStateFlow(
                                     KeyboardOptions(
                                         emojis = emptyList(),
-                                        displayReturn = true,
+                                        displayReturn = false,
                                         displayVoice = false,
                                         enableKeyAnimation = true,
                                         swipeEnabled = false,
@@ -442,12 +443,14 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                 )
 
                 // Keyboard flush above the bottom bar; the search icon below it
-                // submits the search
+                // submits the search. topMarginUnits = 0 keeps the keyboard
+                // tight against the bar (no 1-unit gap).
                 if (showKeyboard) {
                     LightEmbeddedLp3Keyboard(viewModel = keyboardViewModel)
                 }
 
                 LightBottomBar(
+                    topMarginUnits = 0f,
                     items = listOf(
                         LightBarButton.LightIcon(
                             icon = LightIcons.SEARCH,

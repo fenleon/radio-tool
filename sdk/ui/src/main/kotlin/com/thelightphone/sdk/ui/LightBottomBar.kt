@@ -28,6 +28,7 @@ private val BOTTOMBAR_TEXT_VARIANT = LightTextVariant.Button
 fun LightBottomBar(
     items: List<LightBottomBarItem?>,
     modifier: Modifier = Modifier,
+    topMarginUnits: Float = TOP_MARGIN_UNITS,
 ) {
     require(items.size <= 5) { "LightBottomBar supports at most 5 items" }
 
@@ -45,7 +46,7 @@ fun LightBottomBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = TOP_MARGIN_UNITS.gridUnitsAsDp())
+            .padding(top = topMarginUnits.gridUnitsAsDp())
             .height(barHeight)
             .padding(horizontal = horizontalPadding),
         verticalAlignment = Alignment.CenterVertically,
