@@ -24,7 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextLayoutResult
@@ -46,6 +45,7 @@ import com.thelightphone.sdk.LightViewModel
 import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.ui.LightBarButton
+import com.thelightphone.sdk.ui.LightBottomBar
 import com.thelightphone.sdk.ui.LightIcon
 import com.thelightphone.sdk.ui.LightIcons
 import com.thelightphone.sdk.ui.LightScrollView
@@ -293,7 +293,15 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                         // down to ~y300, thin full-width underline (measured
                         // from the LP3 podcast search, 2026-08-19)
                         Column(modifier = Modifier.padding(horizontal = 2f.gridUnitsAsDp())) {
-                            Spacer(modifier = Modifier.height(4.5f.gridUnitsAsDp()))
+                            Spacer(modifier = Modifier.height(3f.gridUnitsAsDp()))
+
+                            // Hint: this field searches or takes a direct URL
+                            LightText(
+                                text = "Search stations or enter a URL",
+                                variant = LightTextVariant.Detail,
+                                lighten = true,
+                                modifier = Modifier.padding(bottom = 0.5f.gridUnitsAsDp())
+                            )
 
                             // Horizontally scrollable text area (the LP3 input row);
                             // tap it to bring the keyboard back
@@ -441,24 +449,22 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                     }
                 )
 
-                // Keyboard flush above the search icon — podcast layout: the
-                // icon floats centered ~80px below the keyboard (no bottom bar)
+                // Keyboard directly above the search action, like the passes
+                // add-code editor: the button sits flush at the bottom with
+                // the keyboard resting on it
                 if (showKeyboard) {
                     LightEmbeddedLp3Keyboard(viewModel = keyboardViewModel)
                 }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(5.75f.gridUnitsAsDp()),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    LightIcon(
-                        icon = LightIcons.SEARCH,
-                        size = 2f,
-                        modifier = Modifier.lightClickable(onClick = onSubmit),
+                LightBottomBar(
+                    topMarginUnits = 0f,
+                    items = listOf(
+                        LightBarButton.LightIcon(
+                            icon = LightIcons.SEARCH,
+                            onClick = onSubmit
+                        )
                     )
-                }
+                )
                 }
                 }
 
