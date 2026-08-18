@@ -87,6 +87,8 @@ class RadioViewModel(
     val isPlaying = player.isPlaying
     val playbackState = player.playbackState
     val error = player.error
+    val mediaMetadata = player.mediaMetadata
+    val bluetoothConnected = com.thelightphone.sdk.audio.LightBluetooth.connected
     val isFavourite = MutableStateFlow(false)
 
     init {
@@ -341,14 +343,6 @@ class RadioViewModel(
         saveLastPlayed()
     }
 
-    fun openAddStation() {
-        currentScreen?.navigateTo({ AddStationUrlScreen(it) }) { selectedStation ->
-            selectedStation?.let {
-                playStation(it)
-            }
-        }
-    }
-
     fun openBluetooth() {
         viewModelScope.launch {
             // This relies on the LightOS server implementing this custom bridge method.
@@ -388,6 +382,8 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
         val state by viewModel.playbackState.collectAsState()
         val error by viewModel.error.collectAsState()
         val isFavourite by viewModel.isFavourite.collectAsState()
+        val mediaMetadata by viewModel.mediaMetadata.collectAsState()
+        val bluetoothConnected by viewModel.bluetoothConnected.collectAsState()
         val themeColors by LightThemeController.colors.collectAsState()
 
         // Derive user-friendly status text from ExoPlayer states
@@ -406,9 +402,8 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                     .fillMaxSize()
                     .background(colors.background)
             ) {
-                // Top Bar with standard back button and tool title
+                // Top bar: title only — the tool button (KEYCODE_HOME) minimizes
                 LightTopBar(
-                    leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { minimize() }),
                     center = LightTopBarCenter.Text("Radio")
                 )
 
@@ -425,10 +420,10 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 16.dp),
+                            .padding(bottom = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        LightText(
+                        MarqueeText(
                             text = name,
                             variant = LightTextVariant.Heading,
                             align = TextAlign.Center,
@@ -449,12 +444,32 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                         }
                     }
 
+                    // Current track (stream metadata) when it differs from the station name
+                    val nowPlaying = mediaMetadata?.let { meta ->
+                        if (meta.title.isNotBlank() && meta.title != name) {
+                            listOfNotNull(meta.title, meta.artist).joinToString(" — ")
+                        } else {
+                            null
+                        }
+                    }
+                    if (nowPlaying != null) {
+                        MarqueeText(
+                            text = nowPlaying,
+                            variant = LightTextVariant.Subheading,
+                            lighten = true,
+                            align = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp)
+                        )
+                    }
+
                     // Playback Status Indicator
                     LightText(
                         text = statusText,
                         variant = LightTextVariant.Detail,
                         lighten = true,
-                        modifier = Modifier.padding(bottom = 32.dp)
+                        modifier = Modifier.padding(top = 16.dp, bottom = 32.dp)
                     )
 
                     // Large Center Play/Stop Button
@@ -470,13 +485,16 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                     }
                 }
 
-                // Standard LightOS Bottom Navigation Bar
+                // Standard LightOS Bottom Navigation Bar (search + URL share one screen)
                 LightBottomBar(
                     items = listOf(
                         LightBarButton.LightIcon(LightIcons.SEARCH, onClick = viewModel::openSearch),
-                        LightBarButton.LightIcon(LightIcons.ADD, onClick = viewModel::openAddStation),
                         LightBarButton.LightIcon(LightIcons.LIST, onClick = viewModel::openLibrary),
-                        LightBarButton.LightIcon(LightIcons.BLUETOOTH, onClick = viewModel::openBluetooth)
+                        LightBarButton.LightIcon(
+                            icon = if (bluetoothConnected) LightIcons.BLUETOOTH_CONNECTED else LightIcons.BLUETOOTH,
+                            onClick = viewModel::openBluetooth,
+                            contentDescription = if (bluetoothConnected) "Bluetooth connected" else "Bluetooth settings"
+                        )
                     )
                 )
             }
@@ -509,7 +527,6 @@ private fun PreviewContent() {
             .background(colors.background)
     ) {
         LightTopBar(
-            leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = {}),
             center = LightTopBarCenter.Text("Radio")
         )
 
@@ -557,7 +574,6 @@ private fun PreviewContent() {
         LightBottomBar(
             items = listOf(
                 LightBarButton.LightIcon(LightIcons.SEARCH, onClick = {}),
-                LightBarButton.LightIcon(LightIcons.ADD, onClick = {}),
                 LightBarButton.LightIcon(LightIcons.LIST, onClick = {}),
                 LightBarButton.LightIcon(LightIcons.BLUETOOTH, onClick = {})
             )

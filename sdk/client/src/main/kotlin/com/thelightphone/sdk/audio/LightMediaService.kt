@@ -50,6 +50,7 @@ class LightMediaService : MediaSessionService() {
         createNotificationChannel()
         startForegroundServiceWithNotification()
         attachToSession()
+        LightBluetooth.observe(this)
     }
 
     /**

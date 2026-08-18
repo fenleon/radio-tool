@@ -48,6 +48,7 @@ class LightAudioPlayer internal constructor(
     private val _isPlaying = MutableStateFlow(false)
     private val _currentMediaItemIndex = MutableStateFlow(NO_MEDIA_ITEM)
     private val _playbackState = MutableStateFlow(Player.STATE_IDLE)
+    private val _mediaMetadata = MutableStateFlow<LightMediaMetadata?>(null)
     private val _error = MutableStateFlow<Throwable?>(null)
     private var positionJob: Job? = null
     private var pausedForTransientLoss = false
@@ -63,6 +64,8 @@ class LightAudioPlayer internal constructor(
     val currentMediaItemIndex: StateFlow<Int> = _currentMediaItemIndex
     /** Current playback state of the platform player. */
     val playbackState: StateFlow<Int> = _playbackState
+    /** Current track metadata (e.g. ICY "Artist - Song" updates from the stream). */
+    val mediaMetadata: StateFlow<LightMediaMetadata?> = _mediaMetadata
     /** Current player error, if any. */
     val error: StateFlow<Throwable?> = _error
 
@@ -146,6 +149,10 @@ class LightAudioPlayer internal constructor(
                             stopPositionUpdates()
                             updatePosition()
                         }
+                    }
+
+                    override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+                        _mediaMetadata.value = mediaMetadata.toLightMediaMetadata() ?: _mediaMetadata.value
                     }
 
                     override fun onPlaybackStateChanged(playbackState: Int) {
@@ -407,6 +414,16 @@ private fun LightMediaMetadata.toMedia3Metadata(queueIndex: Int): MediaMetadata 
         .setDurationMs(durationMs)
         .setTrackNumber(queueIndex + 1)
         .build()
+}
+
+/** Maps platform metadata to the SDK type; null when there is nothing to show. */
+private fun MediaMetadata.toLightMediaMetadata(): LightMediaMetadata? {
+    val title = title?.toString()?.takeIf { it.isNotBlank() } ?: return null
+    return LightMediaMetadata(
+        title = title,
+        artist = artist?.toString()?.takeIf { it.isNotBlank() },
+        album = albumTitle?.toString()?.takeIf { it.isNotBlank() }
+    )
 }
 
 internal fun skipPosition(positionMs: Long, durationMs: Long, deltaMs: Long): Long {

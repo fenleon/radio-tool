@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.thelightphone.sdk.LightScreen
 import com.thelightphone.sdk.LightViewModel
@@ -155,10 +156,9 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                     .fillMaxSize()
                     .background(colors.background)
             ) {
-                // Header
+                // Header: title doubles as the back affordance (no back arrow)
                 LightTopBar(
-                    leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { goBack() }),
-                    center = LightTopBarCenter.Text("Library"),
+                    center = LightTopBarCenter.Text("Library", onClick = { goBack() }),
                 )
 
                 // Custom Tab Bar with LP3 styling
@@ -265,7 +265,12 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                     .weight(1f)
                     .lightClickable(onClick = onPlay)
             ) {
-                LightText(text = station.name, variant = LightTextVariant.Copy)
+                LightText(
+                    text = station.name,
+                    variant = LightTextVariant.Copy,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
                 LightText(text = station.url, variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
             }
             
@@ -295,7 +300,6 @@ private fun PreviewLibraryScreen() {
                 .background(LightThemeColors.Dark.background)
         ) {
                 LightTopBar(
-                    leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = {}),
                     center = LightTopBarCenter.Text("Library"),
                 )
 

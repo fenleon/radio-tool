@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.thelightphone.sdk.LightScreen
@@ -125,6 +126,38 @@ class SearchViewModel : LightViewModel<Station?>() {
         }
     }
 
+    /** Whether the input is a direct stream URL rather than a search term. */
+    private fun looksLikeUrl(input: String): Boolean =
+        input.contains("://") || (input.contains(".") && !input.contains(" "))
+
+    /**
+     * Single entry point for the merged field: a URL plays directly, anything
+     * else searches the directory.
+     */
+    fun submit() {
+        val input = query.value.trim()
+        if (input.isBlank()) return
+        if (looksLikeUrl(input)) {
+            selectUrl(input)
+        } else {
+            search()
+        }
+    }
+
+    /** Whether the current query reads as a direct URL (drives the "Play this URL" row). */
+    fun queryLooksLikeUrl(): Boolean = looksLikeUrl(query.value.trim())
+
+    /** Plays a direct URL, deriving a readable name from its host. */
+    fun selectUrl(input: String) {
+        val url = input.trim()
+        val name = url
+            .removePrefix("http://").removePrefix("https://")
+            .substringBefore("/").substringBefore(";")
+            .ifBlank { "Untitled" }
+        android.util.Log.d("SearchViewModel", "Direct URL: $name | $url")
+        currentScreen?.goBack(Station(name, url))
+    }
+
     /** Returns the selected station metadata back to the HomeScreen. */
     fun selectStation(station: RadioBrowserStation) {
         val streamUrl = station.urlResolved?.takeIf { it.isNotBlank() } ?: station.url
@@ -151,6 +184,7 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
         val query by viewModel.query.collectAsState()
         val results by viewModel.results.collectAsState()
         val searching by viewModel.isSearching.collectAsState()
+        val isUrl = viewModel.queryLooksLikeUrl()
         val focusManager = LocalFocusManager.current
 
         LightTheme(colors = LightThemeColors.Dark) {
@@ -160,25 +194,24 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                     .fillMaxSize()
                     .background(colors.background)
             ) {
-                // Top Bar with Search action
+                // Top Bar: title doubles as the back affordance (no back arrow)
                 LightTopBar(
-                    leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { goBack() }),
-                    center = LightTopBarCenter.Text("Find stations"),
+                    center = LightTopBarCenter.Text("Find stations", onClick = { goBack() }),
                     rightButton = LightBarButton.LightIcon(
                         icon = LightIcons.SEARCH,
                         onClick = {
                             focusManager.clearFocus()
-                            viewModel.search()
+                            viewModel.submit()
                         }
                     )
                 )
 
                 Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    // Single-line search input
+                    // Merged field: type a search term or paste a stream URL
                     OutlinedTextField(
                         value = query,
                         onValueChange = viewModel::updateQuery,
-                        label = { LightText("Search stations...", variant = LightTextVariant.Detail) },
+                        label = { LightText("Search stations or enter a URL", variant = LightTextVariant.Detail) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 16.dp, bottom = 16.dp),
@@ -187,7 +220,7 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                         keyboardActions = KeyboardActions(
                             onSearch = {
                                 focusManager.clearFocus()
-                                viewModel.search()
+                                viewModel.submit()
                             }
                         ),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -201,10 +234,26 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                         )
                     )
 
+                    // Direct URL detected — offer to play it immediately
+                    if (isUrl) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .lightClickable {
+                                    focusManager.clearFocus()
+                                    viewModel.selectUrl(query)
+                                }
+                                .padding(vertical = 12.dp)
+                        ) {
+                            LightText(text = "Play this URL", variant = LightTextVariant.Copy)
+                            LightText(text = query.trim(), variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
+                        }
+                    }
+
                     // User feedback during search
                     if (searching) {
                         LightText("Searching...", variant = LightTextVariant.Detail, lighten = true)
-                    } else if (query.length > 2 && results.isEmpty()) {
+                    } else if (!isUrl && query.length > 2 && results.isEmpty()) {
                         LightText("No results found", variant = LightTextVariant.Detail, lighten = true)
                     }
 
@@ -232,7 +281,12 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                 .lightClickable(onClick = onClick)
                 .padding(vertical = 12.dp)
         ) {
-            LightText(text = station.name, variant = LightTextVariant.Copy)
+            LightText(
+                text = station.name,
+                variant = LightTextVariant.Copy,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
             val details = mutableListOf<String>()
             station.country?.takeIf { it.isNotBlank() }?.let { details.add(it) }
             station.codec?.takeIf { it.isNotBlank() }?.let { details.add(it.uppercase()) }
@@ -255,7 +309,6 @@ private fun PreviewSearchScreen() {
                 .background(LightThemeColors.Dark.background)
         ) {
             LightTopBar(
-                leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = {}),
                 center = LightTopBarCenter.Text("Find stations"),
                 rightButton = LightBarButton.LightIcon(icon = LightIcons.SEARCH, onClick = {})
             )
