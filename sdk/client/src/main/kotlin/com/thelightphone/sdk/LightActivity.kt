@@ -93,6 +93,11 @@ class LightActivity internal constructor() : ComponentActivity() {
         }
         super.onCreate(savedInstanceState)
 
+        // While this tool is foreground the rocker always adjusts media
+        // volume — never the ringer (Android routes the rocker to the ringer
+        // when no audio is playing, which is wrong for a radio tool).
+        setVolumeControlStream(android.media.AudioManager.STREAM_MUSIC)
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(WindowInsetsCompat.Type.systemBars())

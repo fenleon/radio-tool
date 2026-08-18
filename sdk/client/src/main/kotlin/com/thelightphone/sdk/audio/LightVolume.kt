@@ -24,6 +24,9 @@ object LightVolume {
     /**
      * Volume snapshot. A stream's max is 0 until its first read.
      * [ringerMode] is [AudioManager.RINGER_MODE_NORMAL]/[_SILENT]/[_VIBRATE].
+     * [seeded] is false until the first real read — consumers must ignore
+     * transitions from an unseeded state (the collector may start before
+     * [observe] runs).
      */
     data class State(
         val mediaLevel: Int = 0,
@@ -31,6 +34,7 @@ object LightVolume {
         val ringerLevel: Int = 0,
         val ringerMax: Int = 0,
         val ringerMode: Int = AudioManager.RINGER_MODE_NORMAL,
+        val seeded: Boolean = false,
     )
 
     private val _state = MutableStateFlow(State())
@@ -75,6 +79,7 @@ object LightVolume {
             ringerLevel = audio.getStreamVolume(AudioManager.STREAM_RING),
             ringerMax = audio.getStreamMaxVolume(AudioManager.STREAM_RING),
             ringerMode = audio.ringerMode,
+            seeded = true,
         )
     }
 }

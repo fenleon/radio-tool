@@ -39,8 +39,9 @@ abstract class RadioBaseViewModel<T> : LightViewModel<T>() {
             LightVolume.state.collect { current ->
                 val prev = last
                 last = current
-                // The first emission is the initial read (a seed, not a change).
-                if (!screenVisible || prev == null) return@collect
+                // Seed once: ignore the initial read and any transition from
+                // an unseeded state (the collector may start before observe).
+                if (!screenVisible || prev == null || !prev.seeded || !current.seeded) return@collect
                 when {
                     prev.mediaLevel != current.mediaLevel && current.mediaMax > 0 ->
                         volumePanel.value = VolumePanelState.Media(current.mediaLevel, current.mediaMax)
