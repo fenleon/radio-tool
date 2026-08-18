@@ -449,22 +449,27 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                     }
                 )
 
-                // Keyboard directly above the search action, like the passes
-                // add-code editor: the button sits flush at the bottom with
-                // the keyboard resting on it
+                // Passes-style bottom: the search action lives in the
+                // keyboard's reserved bottom zone (additionalBottomHeight =
+                // 5 units), so the keys sit at the same height as the passes
+                // add-code editor and the bar is nested in the keyboard block
                 if (showKeyboard) {
-                    LightEmbeddedLp3Keyboard(viewModel = keyboardViewModel)
-                }
-
-                LightBottomBar(
-                    topMarginUnits = 0f,
-                    items = listOf(
-                        LightBarButton.LightIcon(
-                            icon = LightIcons.SEARCH,
-                            onClick = onSubmit
-                        )
+                    LightEmbeddedLp3Keyboard(
+                        viewModel = keyboardViewModel,
+                        additionalBottomHeight = 5f.gridUnitsAsDp(),
+                        bottomBar = {
+                            LightBottomBar(
+                                topPadding = 0.dp,
+                                items = listOf(
+                                    LightBarButton.Text(
+                                        text = "SEARCH",
+                                        onClick = onSubmit,
+                                    )
+                                ),
+                            )
+                        },
                     )
-                )
+                }
                 }
                 }
 
