@@ -216,9 +216,12 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
         var showKeyboard by remember { mutableStateOf(true) }
 
         val onSubmit = {
+            val input = query.trim()
             if (viewModel.queryLooksLikeUrl()) {
                 viewModel.selectUrl(query) // direct URL — pops back to Home
-            } else {
+            } else if (input.length >= 2) {
+                // search() also guards, but don't flip to the results view
+                // for an empty/1-char query — nothing to search
                 showResults = true
                 showKeyboard = false
                 viewModel.search()
