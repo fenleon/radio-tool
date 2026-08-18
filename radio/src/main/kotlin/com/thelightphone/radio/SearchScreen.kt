@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextLayoutResult
@@ -45,7 +46,7 @@ import com.thelightphone.sdk.LightViewModel
 import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.ui.LightBarButton
-import com.thelightphone.sdk.ui.LightBottomBar
+import com.thelightphone.sdk.ui.LightIcon
 import com.thelightphone.sdk.ui.LightIcons
 import com.thelightphone.sdk.ui.LightScrollView
 import com.thelightphone.sdk.ui.LightText
@@ -288,14 +289,11 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                             .weight(1f)
                             .fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                            // "Search stations or enter a URL..." label
-                            LightText(
-                                text = "Search stations or enter a URL",
-                                variant = LightTextVariant.Detail,
-                                lighten = true,
-                                modifier = Modifier.padding(top = 1f.gridUnitsAsDp(), bottom = 0.5f.gridUnitsAsDp())
-                            )
+                        // Podcast-style input: 2-unit side padding, text pushed
+                        // down to ~y300, thin full-width underline (measured
+                        // from the LP3 podcast search, 2026-08-19)
+                        Column(modifier = Modifier.padding(horizontal = 2f.gridUnitsAsDp())) {
+                            Spacer(modifier = Modifier.height(4.5f.gridUnitsAsDp()))
 
                             // Horizontally scrollable text area (the LP3 input row);
                             // tap it to bring the keyboard back
@@ -332,7 +330,7 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
 
                             // Fixed underline below the scrollable box
                             Spacer(modifier = Modifier.height(0.5f.gridUnitsAsDp()))
-                            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(colors.content))
+                            Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(colors.content))
 
                             // Direct URL detected — offer to play it immediately
                             if (isUrl) {
@@ -443,22 +441,24 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                     }
                 )
 
-                // Keyboard flush above the bottom bar; the search icon below it
-                // submits the search. topMarginUnits = 0 keeps the keyboard
-                // tight against the bar (no 1-unit gap).
+                // Keyboard flush above the search icon — podcast layout: the
+                // icon floats centered ~80px below the keyboard (no bottom bar)
                 if (showKeyboard) {
                     LightEmbeddedLp3Keyboard(viewModel = keyboardViewModel)
                 }
 
-                LightBottomBar(
-                    topMarginUnits = 0f,
-                    items = listOf(
-                        LightBarButton.LightIcon(
-                            icon = LightIcons.SEARCH,
-                            onClick = onSubmit
-                        )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(5.75f.gridUnitsAsDp()),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LightIcon(
+                        icon = LightIcons.SEARCH,
+                        size = 2f,
+                        modifier = Modifier.lightClickable(onClick = onSubmit),
                     )
-                )
+                }
                 }
                 }
 
