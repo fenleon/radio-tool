@@ -76,6 +76,9 @@ class RadioViewModel(
     private val lastPlayedFile = File(filesDir, "last_played.json")
 
     private var currentScreen: SimpleLightScreen<Unit>? = null
+
+    /** Whether a real station is loaded (false on the fresh-install default). */
+    private var hasStation = false
     
     // Observable state for the UI
     val streamUrl = MutableStateFlow("https://stream.radiokps.nz/")
@@ -145,6 +148,7 @@ class RadioViewModel(
                 val station = Json.decodeFromString<Station>(json)
                 stationName.value = station.name
                 streamUrl.value = sanitizeUrl(station.url)
+                hasStation = true
             } catch (e: Exception) {
                 android.util.Log.e("RadioViewModel", "Failed to load last played", e)
             }
@@ -193,7 +197,7 @@ class RadioViewModel(
     fun togglePlayback() {
         if (isPlaying.value) {
             player.stop()
-        } else {
+        } else if (hasStation) {
             val sanitizedUrl = sanitizeUrl(streamUrl.value)
             val station = Station(stationName.value, sanitizedUrl)
             val item = LightAudioItem(
@@ -206,6 +210,7 @@ class RadioViewModel(
             addToRecent(station)
             updateFavouriteState()
         }
+        // No station selected — pressing play does nothing (nothing to connect to)
     }
 
     /** Adds or removes the current station from the user's curated Favorites list. */
@@ -231,6 +236,7 @@ class RadioViewModel(
     fun playStation(station: Station) {
         val sanitizedUrl = sanitizeUrl(station.url)
         val sanitizedStation = Station(station.name, sanitizedUrl)
+        hasStation = true
         
         android.util.Log.d("RadioViewModel", "Playing: ${station.name} | URL: $sanitizedUrl")
         stationName.value = station.name
