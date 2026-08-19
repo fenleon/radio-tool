@@ -72,6 +72,13 @@ so they sideload on a real LP3 with Developer → External tools set to
 
 ## Screens
 
+Captured on a real Light Phone 3 (2026-08-19):
+
+| | | |
+|---|---|---|
+| ![Home](screenshots/home.png) | ![Find Stations](screenshots/find-stations.png) | ![Search Results](screenshots/search-results.png) |
+| ![Library](screenshots/library.png) | | |
+
 | Screen | Notes |
 |---|---|
 | Home (Now Playing) | `HomeScreen.kt` — no top bar, marquee title, track line, play/stop, star |
