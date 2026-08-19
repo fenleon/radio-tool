@@ -230,6 +230,16 @@ class LightActivity internal constructor() : ComponentActivity() {
         super.onResume()
         currentScreen.value?.screen?.notifyWillShow()
     }
+
+    override fun onDestroy() {
+        // The tool may be finished without a goBack (LightOS finishing the
+        // activity when the tool is backgrounded), which would otherwise leak
+        // every screen's ViewModelStore — and with it any process-lifetime
+        // resources the VMs hold (e.g. a detached audio handle). Clear every
+        // store so onCleared always runs.
+        backStack.forEach { it.viewModelStoreOwner.viewModelStore.clear() }
+        super.onDestroy()
+    }
 }
 
 class SealedLightContext(internal val androidContext: Context) {

@@ -25,6 +25,7 @@ import com.thelightphone.sdk.SealedLightActivity
 import com.thelightphone.sdk.SimpleLightScreen
 import com.thelightphone.sdk.audio.DefaultLightAudio
 import com.thelightphone.sdk.audio.LightAudioItem
+import com.thelightphone.sdk.audio.LightAudioPlayback
 import com.thelightphone.sdk.audio.LightAudioPlayer
 import com.thelightphone.sdk.audio.LightAudioSource
 import com.thelightphone.sdk.audio.LightMediaMetadata
@@ -66,9 +67,13 @@ class RadioViewModel(
     filesDir: File,
     private val sealedActivity: SealedLightActivity
 ) : RadioBaseViewModel<Unit>() {
-    // SDK provided audio player wrapper
+    // SDK provided audio player wrapper. Detached: the player lives in the
+    // SDK's LightAudioService, so playback survives the tool losing foreground
+    // and every tool instance shares one session — Bluetooth/media-button
+    // controls always action the station that's actually playing, and there is
+    // never a second, stale player.
     private val audio = DefaultLightAudio(sealedActivity)
-    private val player: LightAudioPlayer = audio.newPlayer()
+    private val player: LightAudioPlayer = audio.newPlayer(playback = LightAudioPlayback.Detached)
     
     // File paths for local persistence
     private val stationsFile = File(filesDir, "stations.json")
@@ -351,10 +356,11 @@ class RadioViewModel(
     }
 
     fun openBluetooth() {
-        // The SDK service launches the system Bluetooth settings directly;
-        // the platform server's OpenBluetoothSettings bridge isn't
-        // implemented on every device.
-        com.thelightphone.sdk.audio.LightMediaService.openBluetoothSettings()
+        // Launch through the SDK's transparent bridge activity: the tool's
+        // foreground activity starts it, and it opens the system Bluetooth
+        // settings. (The old static LightMediaService path no-op'd when the
+        // service instance was null.)
+        currentScreen?.openBluetoothSettings()
     }
 
     override fun onBackPressed(): Boolean {
@@ -363,7 +369,9 @@ class RadioViewModel(
     }
 
     override fun onCleared() {
-        // Clean up resources when the app is fully closed
+        // Releases the detached handle only — playback continues in
+        // LightAudioService until stopped or the service's idle rule fires,
+        // so background listening survives the tool closing.
         player.release()
         super.onCleared()
     }
