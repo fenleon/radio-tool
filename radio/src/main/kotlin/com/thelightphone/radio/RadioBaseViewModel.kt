@@ -12,14 +12,13 @@ import kotlinx.coroutines.launch
 /**
  * Base view model for every Radio screen — owns the volume panel.
  *
- * The LP3's rocker adjusts the active stream itself and broadcasts
- * VOLUME_CHANGED_ACTION (the SDK never forwards volume keys to the screen —
- * LightActivity routes them to super). So the panel is driven by
- * [LightVolume]'s receiver: media changes show the Media panel (playing),
- * ringer changes the Ringer/Silent/Vibrate panel (nothing playing). The
- * panel therefore shows whether or not audio is playing, as long as the
- * tool is in the foreground. [onKeyDown] remains as a fallback for devices
- * that do deliver volume keys.
+ * The volume rocker goes to the platform (LightActivity routes system keys to
+ * super), so the platform adjusts the active stream: media while the radio
+ * plays, ringer otherwise. That change broadcasts VOLUME_CHANGED_ACTION, which
+ * [LightVolume] observes — so this panel is a *mirror* of what the platform
+ * already did, not an adjuster. (The tool cannot adjust the stream itself: it
+ * has no Context — the SDK plugin bans it.) The native LightOS panel can't
+ * show media for third-party players, so this replica is the visible feedback.
  *
  * Only the visible screen reacts: hidden screens (pushed under another
  * screen, or the tool minimized) ignore volume changes, so a stale panel

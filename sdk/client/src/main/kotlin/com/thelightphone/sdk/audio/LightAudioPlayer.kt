@@ -157,6 +157,22 @@ class LightAudioPlayer constructor(
         val token = SessionToken(context, ComponentName(context, LightAudioService::class.java))
         val future = MediaController.Builder(context, token)
             .setConnectionHints(detachedConnectionHints(usage))
+            .setListener(object : MediaController.Listener {
+                override fun onDisconnected(controller: MediaController) {
+                    // The detached session lives in LightAudioService, which
+                    // the system may stop or restart under the controller
+                    // (idle rule, process eviction, LightOS killing it). The
+                    // controller keeps its last state after disconnect, so
+                    // without this reset the tool stays stuck showing
+                    // "playing" — and every play/stop tap would act on the
+                    // dead controller until the app is restarted. The
+                    // controller auto-reconnects; the next command acts on the
+                    // fresh session.
+                    _isPlaying.value = false
+                    _playbackState.value = Player.STATE_IDLE
+                    _error.value = null
+                }
+            })
             .buildAsync()
         cancelPendingConnection = { future.cancel(false) }
         future.addListener(

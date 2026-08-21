@@ -29,8 +29,6 @@ import com.thelightphone.sdk.audio.LightAudioPlayback
 import com.thelightphone.sdk.audio.LightAudioPlayer
 import com.thelightphone.sdk.audio.LightAudioSource
 import com.thelightphone.sdk.audio.LightMediaMetadata
-import com.thelightphone.sdk.callRemoteServiceMethod
-import com.thelightphone.sdk.shared.LightServiceMethod
 import com.thelightphone.sdk.ui.LightBarButton
 import com.thelightphone.sdk.ui.LightBottomBar
 import com.thelightphone.sdk.ui.LightIcons
@@ -58,6 +56,18 @@ import kotlinx.serialization.json.Json
  */
 @Serializable
 data class Station(val name: String, val url: String)
+
+/**
+ * The single playback state driving both the status text and the play/stop
+ * button, so the two can never disagree (they previously read [playing] and
+ * [state] independently, which race across flow emissions).
+ */
+private sealed interface PlaybackUi {
+    data object Error : PlaybackUi
+    data object Playing : PlaybackUi
+    data object Connecting : PlaybackUi
+    data object Stopped : PlaybackUi
+}
 
 /**
  * The core logic for the Radio tool.
@@ -200,7 +210,11 @@ class RadioViewModel(
 
     /** Toggles playback of the current station URL. */
     fun togglePlayback() {
-        if (isPlaying.value) {
+        // Same definition as the UI: playing only when the session is actually
+        // advancing (not idle/ended). The detached controller can report
+        // isPlaying=true while the session is idle, which would otherwise make
+        // this button call stop() forever and never recover.
+        if (isPlaying.value && playbackState.value != Player.STATE_IDLE && playbackState.value != Player.STATE_ENDED) {
             player.stop()
         } else if (hasStation) {
             val sanitizedUrl = sanitizeUrl(streamUrl.value)
@@ -401,12 +415,22 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
         val volumePanel by viewModel.volumePanel.collectAsState()
         val themeColors by LightThemeController.colors.collectAsState()
 
-        // Derive user-friendly status text from ExoPlayer states
-        val statusText = when {
-            error != null -> "Error loading stream"
-            playing && state == Player.STATE_READY -> "Playing Live Stream..."
-            state == Player.STATE_BUFFERING -> "Connecting..."
-            else -> "Stopped"
+        // Derive one playback state; the status text and the play/stop button
+        // both come from it, so they can never disagree. `playing` alone is not
+        // trusted: the detached controller can report playWhenReady=true while
+        // the session is idle (stale event after stop/service restart), so the
+        // real state is playing AND not idle/ended — media3's own definition.
+        val playback = when {
+            error != null -> PlaybackUi.Error
+            state == Player.STATE_BUFFERING -> PlaybackUi.Connecting
+            playing && state != Player.STATE_IDLE && state != Player.STATE_ENDED -> PlaybackUi.Playing
+            else -> PlaybackUi.Stopped
+        }
+        val statusText = when (playback) {
+            PlaybackUi.Error -> "Error loading stream"
+            PlaybackUi.Playing -> "Playing Live Stream..."
+            PlaybackUi.Connecting -> "Connecting..."
+            PlaybackUi.Stopped -> "Stopped"
         }
 
         // Apply the standard Light Phone theme (follows system-wide Light/Dark mode)
@@ -495,7 +519,11 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                             .padding(16.dp)
                     ) {
                         com.thelightphone.sdk.ui.LightIcon(
-                            icon = if (playing) LightIcons.STOP else LightIcons.PLAY,
+                            icon = if (playback == PlaybackUi.Playing || playback == PlaybackUi.Connecting) {
+                                LightIcons.STOP
+                            } else {
+                                LightIcons.PLAY
+                            },
                             size = 2.5f
                         )
                     }
@@ -515,7 +543,9 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                 )
                 }
 
-                // Full-screen overlay on top of everything (visual replica — not interactive)
+                // In-app volume panel — a mirror of the platform's volume
+                // change (the native LightOS panel can't show media for
+                // third-party tools, so this replica is the feedback).
                 VolumePanelOverlay(
                     state = volumePanel,
                     onDismiss = { viewModel.dismissVolumePanel() },

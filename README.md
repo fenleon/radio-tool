@@ -27,10 +27,12 @@ developed and verified on a real Light Phone 3 (LP3). MIT licensed.
   (`BLUETOOTH` vs the underline `BLUETOOTH_CONNECTED` variant) via the
   permission-free `LightBluetooth` SDK helper; tapping opens the system
   Bluetooth settings.
-- **Volume panel** — the native LP3 volume-panel replica (canonical
-  `tools/volume-panel/VolumePanelOverlay.kt`) shows on every rocker press:
-  media panel while playing, ringer panel otherwise. The tool's activity
-  routes the rocker to **media volume only** while the tool is open.
+- **Volume panel** — the rocker goes through the platform, which adjusts the
+  active stream (media while the radio plays, ringer otherwise); the app
+  mirrors the change with its own panel replica, because LightOS's native
+  panel only shows media for its own players (third-party audio is invisible
+  to it). **Brightness** (rotary wheel) and **haptics** (taps) go straight to
+  LightOS via `serverPackage = "com.lightos"` and apply natively.
 
 ## Architecture
 
@@ -39,12 +41,14 @@ Single-module tool (no companion): `:radio` (UI) on the fork's vendored
 
 - `serverPackage = "com.lightos"` — binds LightOS's own SDK server on a real
   LP3 (flip to `com.thelightphone.sdk.emulator` for the emulator).
-- Playback is entirely tool-side (`LightAudioPlayer` → `LightMediaService`
-  in the tool's process) — the server is only used for standard SDK calls.
+- Playback is fully tool-side and detached: `LightAudioPlayer` → the SDK's
+  `LightAudioService` (media3/ExoPlayer) in the tool's process, so the stream
+  survives the tool losing foreground and every tool instance shares one
+  session.
 - `LightBluetooth` / `LightVolume` (sdk:client) are permission-free helpers
-  started by `LightMediaService`: they observe audio-framework state
-  (`AudioDeviceCallback`, `VOLUME_CHANGED_ACTION`) so the tool never needs
-  Context (the tool plugin bans it).
+  started by `LightAudioService`: they observe `AudioDeviceCallback` and
+  `VOLUME_CHANGED_ACTION` so the tool can show the BT state and mirror the
+  volume panel without Context (the tool plugin bans it).
 
 ## Build
 
