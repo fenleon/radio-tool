@@ -70,7 +70,7 @@ internal class LightAudioService : MediaSessionService() {
             .setDefaultRequestProperties(mapOf("Icy-MetaData" to "1"))
 
         val mediaSourceFactory = DefaultMediaSourceFactory(this)
-            .setDataSourceFactory(httpDataSourceFactory)
+            .setDataSourceFactory(IcyMetadataDataSourceFactory(httpDataSourceFactory))
             .setAdViewProvider(null)
 
         return ExoPlayer.Builder(this)

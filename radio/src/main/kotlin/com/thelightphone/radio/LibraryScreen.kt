@@ -162,7 +162,7 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                 // Header
                 LightTopBar(
                     leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { goBack() }),
-                    center = LightTopBarCenter.Text("Library"),
+                    center = LightTopBarCenter.Text("Stations"),
                 )
 
                 // Custom Tab Bar with LP3 styling
@@ -183,7 +183,6 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                             LightText(
                                 text = "Favourites",
                                 variant = LightTextVariant.Subheading,
-                                lighten = activeTab != LibraryTab.Favourites
                             )
                             // Underline indicator for the active tab — hugs the label
                             if (activeTab == LibraryTab.Favourites) {
@@ -209,7 +208,6 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                             LightText(
                                 text = "Recent",
                                 variant = LightTextVariant.Subheading,
-                                lighten = activeTab != LibraryTab.Recent
                             )
                             // Underline indicator for the active tab — hugs the label
                             if (activeTab == LibraryTab.Recent) {
@@ -239,7 +237,6 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                         LightText(
                             text = if (activeTab == LibraryTab.Favourites) "No favourites yet" else "No recent stations",
                             variant = LightTextVariant.Copy,
-                            lighten = true
                         )
                     }
                 } else {
@@ -288,7 +285,7 @@ class LibraryScreen(private val sealedActivity: SealedLightActivity) : LightScre
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                LightText(text = station.url, variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
+                LightText(text = station.url, variant = LightTextVariant.Superfine, maxLines = 1)
             }
             
             // Delete button — flush right
@@ -317,7 +314,7 @@ private fun PreviewLibraryScreen() {
                 .background(LightThemeColors.Dark.background)
         ) {
                 LightTopBar(
-                    center = LightTopBarCenter.Text("Library"),
+                    center = LightTopBarCenter.Text("Stations"),
                 )
 
                 Row(

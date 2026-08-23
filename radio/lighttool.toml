@@ -1,8 +1,8 @@
 [tool]
 id = "com.thelightphone.radio"
 label = "Radio"
-versionCode = 13
-versionName = "1.4.3"
+versionCode = 14
+versionName = "1.4.4"
 permissions = [
     "android.permission.INTERNET",
     "android.permission.POST_NOTIFICATIONS",

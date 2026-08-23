@@ -11,8 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -484,9 +488,16 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                         }
                     }
 
-                    // Current track (stream metadata) when it differs from the station name
+                    // Current track (stream metadata) when it differs from the station name.
+                    // The comparison is anchored to the name as of the last metadata change:
+                    // after a rename the stream's stale title echoes the OLD name, which would
+                    // otherwise render as a duplicate line under the new name.
+                    var nameAtLastMetadata by remember { mutableStateOf<String?>(null) }
+                    LaunchedEffect(mediaMetadata) {
+                        if (mediaMetadata != null) nameAtLastMetadata = name
+                    }
                     val nowPlaying = mediaMetadata?.let { meta ->
-                        if (meta.title.isNotBlank() && meta.title != name) {
+                        if (meta.title.isNotBlank() && meta.title != name && meta.title != nameAtLastMetadata) {
                             listOfNotNull(meta.title, meta.artist).joinToString(" — ")
                         } else {
                             null
@@ -496,7 +507,6 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                         MarqueeText(
                             text = nowPlaying,
                             variant = LightTextVariant.Subheading,
-                            lighten = true,
                             align = TextAlign.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -508,7 +518,6 @@ class HomeScreen(private val sealedActivity: SealedLightActivity) : LightScreen<
                     LightText(
                         text = statusText,
                         variant = LightTextVariant.Detail,
-                        lighten = true,
                         modifier = Modifier.padding(top = 16.dp, bottom = 32.dp)
                     )
 

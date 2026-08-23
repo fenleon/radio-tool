@@ -151,6 +151,13 @@ class LightAudioPlayer constructor(
             stopPositionUpdates()
         }
         commands.ready(connectedPlayer)
+        // ICY track titles from LightAudioService's stream connection (same
+        // process) surface through the same metadata flow as player metadata.
+        scope.launch {
+            IcyMetadataRelay.current.collect { icy ->
+                if (icy != null) _mediaMetadata.value = icy
+            }
+        }
     }
 
     private fun connectDetachedPlayer(context: Context, usage: LightAudioUsage) {
@@ -283,6 +290,9 @@ class LightAudioPlayer constructor(
 
     /** Stops playback and returns to position zero. */
     fun stop() {
+        // The stream connection dies with playback; drop the last ICY title so
+        // a stopped session doesn't keep showing "now playing".
+        IcyMetadataRelay.clear()
         commands.dispatch { player ->
             player.stop()
             player.seekTo(0L)

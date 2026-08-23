@@ -67,9 +67,11 @@ import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.prepareGet
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -160,15 +162,31 @@ class SearchViewModel : RadioBaseViewModel<Station?>() {
     /** Whether the current query reads as a direct URL (drives the "Play this URL" row). */
     fun queryLooksLikeUrl(): Boolean = looksLikeUrl(query.value.trim())
 
-    /** Plays a direct URL, deriving a readable name from its host. */
+    /** Plays a direct URL, naming the station from the stream's icy-name header. */
     fun selectUrl(input: String) {
         val url = input.trim()
-        val name = url
+        val fallback = url
             .removePrefix("http://").removePrefix("https://")
             .substringBefore("/").substringBefore(";")
             .ifBlank { "Untitled" }
-        android.util.Log.d("SearchViewModel", "Direct URL: $name | $url")
-        currentScreen?.goBack(Station(name, url))
+        viewModelScope.launch {
+            val name = fetchStreamName(url) ?: fallback
+            android.util.Log.d("SearchViewModel", "Direct URL: $name | $url")
+            currentScreen?.goBack(Station(name, url))
+        }
+    }
+
+    /** The stream's advertised name (`icy-name` header), or null when it sends none. */
+    private suspend fun fetchStreamName(url: String): String? = try {
+        withTimeout(3_000) {
+            client.prepareGet(url) {
+                header("Icy-MetaData", "1")
+            }.execute { response ->
+                response.headers["icy-name"]?.trim()?.takeIf { it.isNotBlank() }
+            }
+        }
+    } catch (e: Exception) {
+        null
     }
 
     /** Returns the selected station metadata back to the HomeScreen. */
@@ -264,14 +282,12 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                             LightText(
                                 text = "Searching...",
                                 variant = LightTextVariant.Detail,
-                                lighten = true,
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
                             )
                         } else if (hasSearched && results.isEmpty()) {
                             LightText(
                                 text = "No results found",
                                 variant = LightTextVariant.Detail,
-                                lighten = true,
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
                             )
                         }
@@ -309,7 +325,6 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                             LightText(
                                 text = "Search stations or enter a URL",
                                 variant = LightTextVariant.Detail,
-                                lighten = true,
                                 modifier = Modifier.padding(bottom = 0.5f.gridUnitsAsDp())
                             )
 
@@ -365,7 +380,7 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                                         .padding(vertical = 12.dp)
                                 ) {
                                     LightText(text = "Play this URL", variant = LightTextVariant.Copy)
-                                    LightText(text = query.trim(), variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
+                                    LightText(text = query.trim(), variant = LightTextVariant.Superfine, maxLines = 1)
                                 }
                             }
                         }
@@ -519,7 +534,7 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
             station.bitrate?.takeIf { it > 0 }?.let { details.add("${it}kbps") }
             
             if (details.isNotEmpty()) {
-                LightText(text = details.joinToString(" • "), variant = LightTextVariant.Fine, lighten = true, maxLines = 1)
+                LightText(text = details.joinToString(" • "), variant = LightTextVariant.Superfine, maxLines = 1)
             }
         }
     }
