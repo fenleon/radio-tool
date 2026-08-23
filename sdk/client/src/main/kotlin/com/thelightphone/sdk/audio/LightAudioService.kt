@@ -84,6 +84,10 @@ internal class LightAudioService : MediaSessionService() {
                 )
                 .build())
             .setWakeMode(C.WAKE_MODE_NETWORK)
+            // Defaults to false in media3: pause when audio reroutes to the
+            // speaker (headphones unplugged, BT device disconnected) instead
+            // of blasting the stream out loud.
+            .setHandleAudioBecomingNoisy(true)
             .build()
             .apply {
                 setAudioAttributes(LightAudioUsage.Music.toMedia3AudioAttributes(), true)

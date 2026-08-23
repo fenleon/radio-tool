@@ -1,6 +1,7 @@
 package com.thelightphone.radio
 
 import android.media.AudioManager
+import android.os.SystemClock
 import android.view.KeyEvent
 import androidx.lifecycle.viewModelScope
 import com.thelightphone.sdk.LightViewModel
@@ -32,6 +33,19 @@ abstract class RadioBaseViewModel<T> : LightViewModel<T>() {
     @Volatile
     private var screenVisible = false
 
+    /**
+     * When this screen first became visible (elapsedRealtime, 0 = never).
+     *
+     * Volume changes within [LAUNCH_SETTLE_MS] of that moment are ignored.
+     * onScreenShow fires at onResume — while the splash (≥1 s) is still up —
+     * so a platform volume broadcast landing in that window (LightOS audio
+     * activation, BT AVRCP reconnect) paints the panel the instant the splash
+     * lifts, looking like a flash on launch. No user volume press can land in
+     * that window, so suppressing it costs nothing.
+     */
+    @Volatile
+    private var firstShowAt = 0L
+
     init {
         viewModelScope.launch {
             var last: LightVolume.State? = null
@@ -41,6 +55,8 @@ abstract class RadioBaseViewModel<T> : LightViewModel<T>() {
                 // Seed once: ignore the initial read and any transition from
                 // an unseeded state (the collector may start before observe).
                 if (!screenVisible || prev == null || !prev.seeded || !current.seeded) return@collect
+                // Launch settle: ignore volume changes in the splash window.
+                if (firstShowAt > 0 && SystemClock.elapsedRealtime() - firstShowAt < LAUNCH_SETTLE_MS) return@collect
                 when {
                     prev.mediaLevel != current.mediaLevel && current.mediaMax > 0 ->
                         volumePanel.value = VolumePanelState.Media(current.mediaLevel, current.mediaMax)
@@ -58,6 +74,7 @@ abstract class RadioBaseViewModel<T> : LightViewModel<T>() {
     override fun onScreenShow(screen: SimpleLightScreen<T>) {
         super.onScreenShow(screen)
         screenVisible = true
+        if (firstShowAt == 0L) firstShowAt = SystemClock.elapsedRealtime()
     }
 
     override fun onScreenHide(screen: SimpleLightScreen<T>) {
@@ -89,3 +106,9 @@ abstract class RadioBaseViewModel<T> : LightViewModel<T>() {
         return super.onKeyDown(keyCode, event)
     }
 }
+
+/**
+ * Volume changes within this window of a screen's first show are ignored —
+ * the splash (≥1 s) is still up and no user volume press can land there.
+ */
+private const val LAUNCH_SETTLE_MS = 2_500L
