@@ -173,7 +173,14 @@ class SearchViewModel : RadioBaseViewModel<Station?>() {
 
     /** Returns the selected station metadata back to the HomeScreen. */
     fun selectStation(station: RadioBrowserStation) {
-        val streamUrl = station.urlResolved?.takeIf { it.isNotBlank() } ?: station.url
+        // Prefer url_resolved, but fall back to the original URL when it looks
+        // truncated or malformed (no dot, or trailing dot) — Radio Browser
+        // occasionally returns broken url_resolved values.
+        val streamUrl = if (station.urlResolved?.contains(".") == true && !station.urlResolved.endsWith(".")) {
+            station.urlResolved
+        } else {
+            station.url
+        }
         android.util.Log.d("SearchViewModel", "Selected: ${station.name} | URL: $streamUrl | Codec: ${station.codec}")
         currentScreen?.goBack(Station(station.name, streamUrl))
     }
