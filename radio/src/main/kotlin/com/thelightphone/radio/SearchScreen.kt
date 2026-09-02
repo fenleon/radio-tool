@@ -268,9 +268,12 @@ class SearchScreen(private val sealedActivity: SealedLightActivity) : LightScree
                 ) {
                 if (showResults) {
                     // ---- Search Results view (podcast style: no query shown) ----
+                    // Title is the live query; BACK returns to the player, the
+                    // search icon goes back to editing the query.
                     LightTopBar(
-                        leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { backToSearch() }),
-                        center = LightTopBarCenter.Text("Search Results"),
+                        leftButton = LightBarButton.LightIcon(LightIcons.BACK, onClick = { goBack() }),
+                        center = LightTopBarCenter.Text(query.trim()),
+                        rightButton = LightBarButton.LightIcon(LightIcons.SEARCH, onClick = { backToSearch() }, contentDescription = "Change search"),
                     )
 
                     Column(

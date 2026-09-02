@@ -10,10 +10,11 @@
     <!-- Connected-state underline — 2 units thick, matching the 2dp active-tab
          underlines (Favourites/Recent) in the Library screen. The bluetooth glyph
          spans the full 20-unit height (its tail reaches y20), so the bar sits at
-         the very bottom (y20..22, x 3..17 ≈ the glyph footprint): the glyph's
-         bottom touches the line but nothing overlaps. -->
+         the very bottom (y20..22) and runs slightly wider than the glyph
+         footprint (glyph x 3..17.2, bar x 2..18): the glyph's bottom touches the
+         line but nothing overlaps. -->
     <path
-        android:pathData="M3,20h14v2H3z"
+        android:pathData="M2,20h16v2H2z"
         android:fillColor="#FFFFFFFF"
         />
 </vector>
